@@ -110,7 +110,13 @@ Product.hasMany(Review, { foreignKey: 'idProduct' });
 Review.belongsTo(Product, { foreignKey: 'idProduct' });
 
 User.hasMany(Review, { foreignKey: 'idUser' });
-Review.belongsTo(User, { foreignKey: 'idUser' });
+User.hasMany(Review, { foreignKey: 'idUser' });
+
+User.hasMany(Favourite,    { foreignKey: 'userId' });
+Favourite.belongsTo(User,  { foreignKey: 'userId' });
+
+Product.hasMany(Favourite,    { foreignKey: 'idProduct' });
+Favourite.belongsTo(Product,  { foreignKey: 'idProduct' });
 
 module.exports = {
     User,
