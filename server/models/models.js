@@ -14,25 +14,7 @@ const User = sequelize.define('user', {
     admin: {type: DataTypes.BOOLEAN, defaultValue: false},
 }, { freezeTableName: true });
 
-const Favourite = sequelize.define('favourite', {
-    idFavourite: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: 'user',
-            key: 'idUser',
-        }
-    },
-    idProduct: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: 'product',
-            key: 'idProduct',
-        }
-    }
-}, { freezeTableName: true })
+
 
 const Product = sequelize.define('product', {
     idProduct: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -96,6 +78,26 @@ const Review = sequelize.define('review', {
     comment: {type: DataTypes.TEXT},
     uploadDate: {type: DataTypes.DATE, defaultValue: DataTypes.NOW},
 })
+
+const Favourite = sequelize.define('favourite', {
+    idFavourite: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'user',
+            key: 'idUser',
+        }
+    },
+    idProduct: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'product',
+            key: 'idProduct',
+        }
+    }
+}, { freezeTableName: true })
 
 User.hasMany(Product, { foreignKey: 'userId' });
 User.hasMany(Rent, { foreignKey: 'idUser' });

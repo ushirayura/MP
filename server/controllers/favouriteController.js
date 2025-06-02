@@ -1,4 +1,4 @@
-const { Favourite, Product } = require('../models/models');
+const { User, Favourite, Product } = require('../models/models');
 const ApiError = require('../error/ApiError');
 
 class FavouriteController {
@@ -71,31 +71,36 @@ class FavouriteController {
         try {
             const {userId} = req.params
 
+            if (!userId) {
+                return next(ApiError.badRequest('Не указан userId'));
+            }
+            
             const user = await User.findByPk(userId)
             if (!user) {
                 return next(ApiError.badRequest(`Пользователь с id=${userId} не найден`))
             }
 
-            const favourites = Favourite.findAll({
-                where: {userId},
-                include: [
-                    {
-                        model: Product,
-                        attributes: ['idProduct', 'name', 'description', 'price', 'category', 'rating']
-                    }
-                ]
-            })
+            const favRecords = await Favourite.findAll({
+                where: { userId },
+                attributes: ['idProduct'],
+            });
 
-            const result = favourites.map(fav => ({
-                idFavourite: fav.idFavourite,
-                product: fav.Product,
-            }))
+            if (!favRecords || favRecords.length === 0) {
+                return res.json({ userId, products: [] });
+            }
 
-            return res.json({userId, favourites: result})
+            const productIds = favRecords.map(r => r.idProduct);
+            
+            const products = await Product.findAll({
+                where: { idProduct: productIds },
+                attributes: ['idProduct', 'name', 'description', 'price', 'category', 'rating']
+            });
+
+            return res.json({userId, products})
         } catch(e) {
             next(ApiError.internal(e))
         }
     }
 }
 
-module.exports = FavouriteController
+module.exports = new FavouriteController()
