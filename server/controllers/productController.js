@@ -68,10 +68,11 @@ class ProductController {
 
     async remove(req, res, next) {
         try {
-            const {userId, productId} = req.body;
+            const {productId} = req.body;
+            const userId = req.user.id;
             
-            if (!productId || !userId) {
-                return next(ApiError.badRequest('Не указан userId или productId'))
+            if (!productId) {
+                return next(ApiError.badRequest('Не указан productId'))
             }
 
             const deletedCount = await Product.destroy({

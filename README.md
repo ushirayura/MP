@@ -7,7 +7,7 @@
 ### Пример входных данных
 
 ```json
-POST http://localhost:PORT/api/user/login
+POST http://localhost:PORT/api/user/registration
 Content-Type: application/json
 
 {
@@ -56,7 +56,7 @@ Content-Type: application/json
 ### Пример входных данных
 
 ```json
-POST http://localhost:PORT/api/user/auth
+POST http://localhost:PORT/api/user/login
 Content-Type: application/json
 
 {
