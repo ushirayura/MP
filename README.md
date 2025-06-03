@@ -1,6 +1,6 @@
 # MP
 
-# MP
+## UserController
 
 Функция registration принимает HTTP-запрос с полями email, password, name, birthday и phone из объекта req.body. Она проверяет, что обязательные поля phone, password, name и birthday присутствуют, и возвращает ошибку 400 Bad Request, если какое-либо из них отсутствует. Далее функция обращается к базе данных через модель User и проверяет, не существует ли уже пользователь с указанным номером телефона. Если пользователь с таким телефоном найден, возвращается ошибка 400 Bad Request. Если в запросе указан email, выполняется дополнительная проверка на его уникальность аналогичным образом. После успешных проверок пароль хешируется с помощью bcrypt, после чего создается новая запись пользователя в базе данных с сохранением email (или null, если email не передан), захешированного пароля, имени, даты рождения и телефона. Затем генерируется JWT-токен, содержащий id пользователя и номер телефона, с помощью функции generateJwt, в которой секретный ключ берется из переменной окружения SECRET_KEY (или используется значение по умолчанию 'my_secret_key'), а срок действия токена устанавливается в 24 часа. В конце функция возвращает ответ в формате JSON, включающий сгенерированный токен и данные о новом пользователе (id, email, name, birthday, phone). В случае любых ошибок во время выполнения операций функция перехватывает исключение и передает его в следующий middleware в виде ApiError.internal с сообщением ошибки и кодом 500 Internal Server Error.
 
@@ -111,7 +111,7 @@ Content-Type: application/json
 ### Пример входных данных
 
 ```http
-GET http://localhost:7000/api/user/check
+GET http://localhost:PORT/api/user/check
 Authorization: Bearer <существующий_jwt_токен>
 ```
 
@@ -198,7 +198,7 @@ Content-Type: application/json
 
 **Пример входных данных (HTTP GET `http://localhost:PORT/api/product/sort`):**  
 ```
-GET /api/product/sort?category=Electronics&name=iPhone&minPrice=500&maxPrice=1500&minRating=4.5&userId=1
+GET http://localhost:PORT/api/product/sort?category=Electronics&name=iPhone&minPrice=500&maxPrice=1500&minRating=4.5&userId=1
 ```
 
 **Возможные ошибки:**  
@@ -249,7 +249,7 @@ Content-Type: application/json
 
 **Пример входных данных (HTTP GET `http://localhost:PORT/api/product/1`):**  
 ```
-GET /api/product/1
+GET http://localhost:PORT/api/product/1
 ```
 (где `1` — это `userId`)
 
@@ -278,7 +278,7 @@ Content-Type: application/json
   },
   {
     "id": 11,
-    "name": "MacBook Pro 16"",
+    "name": "MacBook Pro 16",
     "description": "Ноутбук Apple для профессионалов",
     "userId": 1,
     "category": "Electronics",
