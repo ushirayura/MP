@@ -16,7 +16,7 @@ class ProductController {
 
     }
 
-    async getALL(req, res, next) {
+    async sort(req, res, next) {
         try {
             const { category, name, minPrice, maxPrice, minRating, maxRating, userId } = req.query;
             const where = {};
