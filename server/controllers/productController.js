@@ -65,6 +65,31 @@ class ProductController {
             next(ApiError.badRequest(e));
         }
     }
+
+    async remove(req, res, next) {
+        try {
+            const {userId, productId} = req.body;
+            
+            if (!productId || !userId) {
+                return next(ApiError.badRequest('Не указан userId или productId'))
+            }
+
+            const deletedCount = await Product.destroy({
+                where: {
+                    userId,
+                    idProduct: productId
+                }
+            })
+
+            if (deletedCount === 0) {
+                return next(ApiError.badRequest('Данный товар уже удален'))
+            }
+
+            return res.json({message: 'Объявление удалено'})
+        } catch(e) {
+            next(ApiError.badRequest(e));
+        }
+    }
 }
 
 
