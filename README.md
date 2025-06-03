@@ -289,3 +289,162 @@ Content-Type: application/json
   }
 ]
 ```
+
+---
+
+## FavouriteController
+
+### `create(req, res, next)`
+
+**Что делает:**  
+1. Извлекает из `req.body` поля `userId` и `productId`.  
+2. Проверяет, что оба поля переданы; если нет — возвращает ошибку `400 Bad Request` с сообщением `"Не указан userId или productId"`.  
+3. В базе данных через модель `User.findByPk` проверяет, существует ли пользователь с указанным `userId`; если нет — возвращает ошибку `400 Bad Request` с сообщением `"Пользователь с id=<userId> не найден"`.  
+4. Через модель `Product.findByPk` проверяет, существует ли товар с указанным `productId`; если нет — возвращает ошибку `400 Bad Request` с сообщением `"Товар с id=<productId> не найден"`.  
+5. Проверяет, есть ли уже запись о добавлении данного товара в избранное для этого пользователя: `Favourite.findOne({ where: { userId, idProduct: productId } })`. Если запись найдена — возвращает ошибку `409 Conflict` с сообщением `"Этот товар уже находится в избранном у данного пользователя"`.  
+6. Создаёт новую запись в таблице избранного: `Favourite.create({ userId, idProduct: productId })`.  
+7. Возвращает JSON-ответ с сообщением `"Товар успешоно добавлен в избранное"` и информацией о созданной записи `favourite`.  
+8. В случае любых других ошибок вызывает `next(ApiError.internal(e))`, возвращая ошибку `500 Internal Server Error`.
+
+**Пример входных данных (HTTP POST `http://localhost:PORT/api/favourite/create`):**  
+```json
+{
+  "userId": 1,
+  "productId": 10
+}
+```
+
+**Возможные ошибки:**  
+- **400 Bad Request**: Не передан `userId` или `productId`.  
+  - Сообщение: `"Не указан userId или productId"`.  
+- **400 Bad Request**: Пользователь с указанным `userId` не найден.  
+  - Сообщение: `"Пользователь с id=<userId> не найден"`.  
+- **400 Bad Request**: Товар с указанным `productId` не найден.  
+  - Сообщение: `"Товар с id=<productId> не найден"`.  
+- **409 Conflict**: Запись уже существует в избранном.  
+  - Сообщение: `"Этот товар уже находится в избранном у данного пользователя"`.  
+- **500 Internal Server Error**: Любые другие ошибки при работе с базой данных.  
+  - Сообщение: информация об ошибке из `ApiError.internal`.
+
+**Успешный выход:**  
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "message": "Товар успешоно добавлен в избранное",
+  "favourite": {
+    "id": 5,
+    "userId": 1,
+    "idProduct": 10,
+    "createdAt": "2025-06-03T11:00:00.000Z",
+    "updatedAt": "2025-06-03T11:00:00.000Z"
+  }
+}
+```
+
+---
+
+### `remove(req, res, next)`
+
+**Что делает:**  
+1. Извлекает из `req.body` поля `userId` и `productId`.  
+2. Проверяет, что оба поля переданы; если нет — возвращает ошибку `400 Bad Request` с сообщением `"Не указан userId или productId"`.  
+3. Вызывает `Favourite.destroy({ where: { userId, idProduct: productId } })` для удаления записи из таблицы избранного.  
+4. Если `deletedCount === 0` (не найдено ни одной записи для удаления) — возвращает ошибку `400 Bad Request` с сообщением `"Запись не найдена в избранном"`.  
+5. В случае успешного удаления возвращает JSON-ответ с сообщением `"Товар удалён из избранного"`.  
+6. В случае любых других ошибок вызывает `next(ApiError.internal(e))`, возвращая ошибку `500 Internal Server Error`.
+
+**Пример входных данных (HTTP DELETE `http://localhost:PORT/api/favourite/remove`):**  
+```json
+{
+  "userId": 1,
+  "productId": 10
+}
+```
+
+**Возможные ошибки:**  
+- **400 Bad Request**: Не передан `userId` или `productId`.  
+  - Сообщение: `"Не указан userId или productId"`.  
+- **400 Bad Request**: Запись не найдена в избранном (ничего не удалено).  
+  - Сообщение: `"Запись не найдена в избранном"`.  
+- **500 Internal Server Error**: Любые другие ошибки при работе с базой данных.  
+  - Сообщение: информация об ошибке из `ApiError.internal`.
+
+**Успешный выход:**  
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "message": "Товар удалён из избранного"
+}
+```
+
+---
+
+### `getOne(req, res, next)`
+
+**Что делает:**  
+1. Извлекает из `req.params` параметр `userId`.  
+2. Проверяет, что `userId` передан; если нет — возвращает ошибку `400 Bad Request` с сообщением `"Не указан userId"`.  
+3. Через модель `User.findByPk(userId)` проверяет, существует ли пользователь с данным `userId`; если нет — возвращает ошибку `400 Bad Request` с сообщением `"Пользователь с id=<userId> не найден"`.  
+4. Получает все записи избранного пользователя: `Favourite.findAll({ where: { userId }, attributes: ['idProduct'] })`.  
+5. Если не найдено ни одной записи (массив пустой) — возвращает JSON-ответ `{ userId: <userId>, products: [] }`.  
+6. Извлекает массив `productIds` из результатов (поле `idProduct` каждой записи).  
+7. Получает список продуктов по этим `productIds`: `Product.findAll({ where: { idProduct: productIds }, attributes: ['idProduct', 'name', 'description', 'price', 'category', 'rating'] })`.  
+8. Возвращает JSON-ответ `{ userId: <userId>, products: [...] }` со списком найденных продуктов.  
+9. В случае любых других ошибок вызывает `next(ApiError.internal(e))`, возвращая ошибку `500 Internal Server Error`.
+
+**Пример входных данных (HTTP GET `http://localhost:PORT/api/favourite/1`):**  
+```
+GET http://localhost:PORT/api/favourite/1
+```
+(где `1` — значение `userId`)
+
+**Возможные ошибки:**  
+- **400 Bad Request**: Не передан `userId` в параметрах.  
+  - Сообщение: `"Не указан userId"`.  
+- **400 Bad Request**: Пользователь с указанным `userId` не найден.  
+  - Сообщение: `"Пользователь с id=<userId> не найден"`.  
+- **500 Internal Server Error**: Любые другие ошибки при работе с базой данных.  
+  - Сообщение: информация об ошибке из `ApiError.internal`.
+
+**Успешный выход:**  
+1. Если у пользователя нет товаров в избранном:
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "products": []
+}
+```
+2. Если у пользователя есть товары в избранном:
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "products": [
+    {
+      "idProduct": 10,
+      "name": "iPhone 14 Pro",
+      "description": "Смартфон Apple последнего поколения",
+      "price": 999.99,
+      "category": "Electronics",
+      "rating": 4.8
+    },
+    {
+      "idProduct": 11,
+      "name": "MacBook Pro 16",
+      "description": "Ноутбук Apple для профессионалов",
+      "price": 2499.99,
+      "category": "Electronics",
+      "rating": 4.9
+    }
+  ]
+}
+```
