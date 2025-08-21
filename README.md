@@ -183,7 +183,7 @@ Content-Type: application/json
 
 ---
 
-### `### sort(req, res, next)`
+### `sort(req, res, next)`
 
 **Что делает:**  
 1. Извлекает из `req.query` параметры фильтрации: `category`, `name`, `minPrice`, `maxPrice`, `onlyTopRated`, `userId`.  
