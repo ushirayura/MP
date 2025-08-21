@@ -183,27 +183,33 @@ Content-Type: application/json
 
 ---
 
-### `sort(req, res, next)`
+### `### sort(req, res, next)`
 
 **Что делает:**  
-1. Извлекает из `req.query` параметры фильтрации: `category`, `name`, `minPrice`, `maxPrice`, `minRating`, `maxRating`, `userId`.  
+1. Извлекает из `req.query` параметры фильтрации: `category`, `name`, `minPrice`, `maxPrice`, `onlyTopRated`, `userId`.  
 2. Формирует объект `where` для фильтрации записей в базе данных:  
    - Если указан `userId`, добавляет условие `where.userId = userId`.  
    - Если указана `category`, добавляет условие `where.category = category`.  
    - Если указано `name`, добавляет условие типа `ILIKE %name%` для поиска по подстроке (независимо от регистра).  
    - Если указаны `minPrice` или `maxPrice`, добавляет диапазон для поля `price` (используя операторы `Op.gte` и `Op.lte`).  
-   - Если указаны `minRating` или `maxRating`, добавляет диапазон для поля `rating` (используя `Op.gte` и `Op.lte`).  
-3. Вызывает `Product.findAll({ where })` и возвращает в ответе JSON-массив продуктов, удовлетворяющих условиям.  
-4. Если возникает ошибка при запросе к базе, вызывает `next(ApiError.internal(e))`, возвращая ошибку `500 Internal Server Error`.
+   - Если параметр `onlyTopRated` равен `"true"`, добавляет фильтрацию по рейтингу: `rating` от `4` до `5`.  
+3. Вызывает `Product.findAll({ where })` и возвращает JSON-массив продуктов, удовлетворяющих условиям.  
+4. Если возникает ошибка при запросе к базе, вызывает `next(ApiError.internal(e))`, возвращая ошибку `500 Internal Server Error`.  
+
+---
 
 **Пример входных данных (HTTP GET `http://localhost:PORT/api/product/sort`):**  
 ```
-GET http://localhost:PORT/api/product/sort?category=Electronics&name=iPhone&minPrice=500&maxPrice=1500&minRating=4.5&userId=1
+GET http://localhost:PORT/api/product/sort?category=Electronics&name=iPhone&minPrice=500&maxPrice=1500&onlyTopRated=true&userId=1
 ```
 
+---
+
 **Возможные ошибки:**  
-- **500 Internal Server Error**: Ошибка при формировании или выполнении запроса к базе данных (например, некорректное значение для фильтра).  
-  - Сообщение: информация об ошибке из `ApiError.internal`.
+- **500 Internal Server Error**: Ошибка при формировании или выполнении запроса к базе данных (например, некорректное значение фильтра).  
+  - Сообщение: информация об ошибке из `ApiError.internal`.  
+
+---
 
 **Успешный выход:**  
 ```json
@@ -221,22 +227,10 @@ Content-Type: application/json
     "rating": 4.8,
     "createdAt": "2025-06-03T10:15:30.000Z",
     "updatedAt": "2025-06-03T10:15:30.000Z"
-  },
-  {
-    "id": 12,
-    "name": "iPhone 13",
-    "description": "Смартфон Apple предыдущего поколения",
-    "userId": 1,
-    "category": "Electronics",
-    "price": 699.00,
-    "rating": 4.6,
-    "createdAt": "2025-05-20T08:45:00.000Z",
-    "updatedAt": "2025-05-20T08:45:00.000Z"
   }
 ]
 ```
 
----
 
 ### `getOne(req, res, next)`
 
@@ -288,6 +282,53 @@ Content-Type: application/json
     "updatedAt": "2025-04-10T12:00:00.000Z"
   }
 ]
+```
+
+---
+
+### `remove(req, res, next)`
+
+**Что делает:**  
+1. Извлекает из `req.body` параметры: `userId` и `productId`.  
+2. Проверяет:  
+   - Если один из параметров отсутствует, вызывает ошибку `400 Bad Request` с сообщением:  
+     *"Не указан userId или productId"*.  
+3. Выполняет удаление записи из базы (`Product.destroy`) с условием:  
+   - `userId` совпадает с переданным;  
+   - `idProduct` совпадает с переданным `productId`.  
+4. Если удаление не произошло (`deletedCount === 0`), возвращает ошибку `400 Bad Request` с сообщением:  
+   *"Данный товар уже удалён или не принадлежит пользователю"*.  
+5. Если удаление прошло успешно — возвращает JSON-ответ с сообщением об успешном удалении.  
+6. В случае исключения возвращает ошибку `400 Bad Request` через `ApiError.badRequest`.  
+
+---
+
+**Пример входных данных (HTTP DELETE `http://localhost:PORT/api/product/remove`):**  
+```json
+{
+  "userId": 1,
+  "productId": 12
+}
+```
+
+---
+
+**Возможные ошибки:**  
+- **400 Bad Request**:  
+  - Не указан `userId` или `productId`;  
+  - Указанный товар не существует или не принадлежит пользователю;  
+  - Ошибка при выполнении операции (текст ошибки из `ApiError.badRequest`).  
+
+---
+
+**Успешный выход:**  
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "message": "Объявление удалено"
+}
 ```
 
 ---
@@ -446,5 +487,129 @@ Content-Type: application/json
       "rating": 4.9
     }
   ]
+}
+```
+
+
+## RentController
+
+### `create(req, res, next)`
+
+**Что делает:**
+1. Извлекает из `req.body` поля `idProduct`, `dataStart`, `dataEnd` и `req.user.idUser` (арендатор).
+2. Проверяет, что все поля переданы; если нет — возвращает ошибку `400 Bad Request` с сообщением `"idProduct, dataStart и dataEnd обязательны"`.
+3. Валидирует даты: они должны быть корректными и `dataStart < dataEnd`. Иначе возвращается ошибка `400 Bad Request`.
+4. Проверяет наличие товара по `idProduct`. Если товар не найден — возвращает ошибку `404 Not Found`.
+5. Запрещает арендовать собственный товар (`product.userId === renterId`).
+6. Проверяет пересечение дат с уже существующими подтверждёнными (`status: accepted`) арендами. Если есть конфликт — возвращает ошибку `400 Bad Request` с сообщением `"Товар уже арендован в этот период"`.
+7. Создаёт новую запись в таблице аренды (`Rent.create`) со статусом `"pending"`.
+8. Возвращает JSON-ответ с созданной записью и статусом `201 Created`.
+
+**Пример входных данных (HTTP POST `http://localhost:PORT/api/rent/create`):**
+```json
+{
+  "idProduct": 10,
+  "dataStart": "2025-06-03",
+  "dataEnd": "2025-06-10"
+}
+```
+
+**Возможные ошибки:**
+- **400 Bad Request**: Не переданы обязательные поля или некорректные даты.
+- **400 Bad Request**: Нельзя арендовать собственный товар.
+- **400 Bad Request**: Даты пересекаются с существующей арендой.
+- **404 Not Found**: Товар не найден.
+- **500 Internal Server Error**: Любые другие ошибки при работе с базой данных.
+
+**Успешный выход:**
+```json
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "idRent": 7,
+  "idUser": 2,
+  "idProduct": 10,
+  "status": "pending",
+  "dataStart": "2025-06-03T00:00:00.000Z",
+  "dataEnd": "2025-06-10T00:00:00.000Z",
+  "createdAt": "...",
+  "updatedAt": "..."
+}
+```
+
+---
+
+### `getAll(req, res, next)`
+
+**Что делает:**
+1. Извлекает параметр `role` из `req.query` и `userId` из `req.user.idUser`.
+2. Если `role === "renter"` — возвращает аренды, созданные текущим пользователем.
+3. Если `role === "owner"` — ищет товары пользователя и возвращает аренды, относящиеся к ним.
+4. Подключает связанные данные:
+   - `Product`: поля `name`, `photo`, `price`.
+   - `User`: поля `name`, `secondName`.
+5. Возвращает список аренд, отсортированных по дате начала (`dataStart DESC`).
+
+**Пример входных данных (HTTP GET `http://localhost:PORT/api/rent/getAll?role=renter`):**
+
+**Успешный выход:**
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+[
+  {
+    "idRent": 7,
+    "idUser": 2,
+    "idProduct": 10,
+    "status": "pending",
+    "dataStart": "2025-06-03T00:00:00.000Z",
+    "dataEnd": "2025-06-10T00:00:00.000Z",
+    "Product": { "name": "Ноутбук", "photo": "image.jpg", "price": 1000 },
+    "User": { "name": "Иван", "secondName": "Иванов" }
+  }
+]
+```
+
+---
+
+### `updateStatus(req, res, next)`
+
+**Что делает:**
+1. Извлекает `id` аренды из `req.params` и новый `status` из `req.body`.
+2. Проверяет корректность параметров: `id` должен быть числом, `status` — одним из `"accepted"` или `"rejected"`.
+3. Ищет аренду по ID. Если не найдена — возвращает `404 Not Found`.
+4. Проверяет, что арендодатель (`req.user.idUser`) действительно владелец товара.
+5. Обновляет статус аренды и сохраняет изменения.
+6. Возвращает обновлённую запись.
+
+**Пример входных данных (HTTP PATCH `http://localhost:PORT/api/rent/5/status`):**
+```json
+{
+  "status": "accepted"
+}
+```
+
+**Возможные ошибки:**
+- **400 Bad Request**: Некорректные параметры.
+- **403 Forbidden**: Пользователь не является владельцем товара.
+- **404 Not Found**: Запрос на аренду не найден.
+- **500 Internal Server Error**: Ошибка базы данных.
+
+**Успешный выход:**
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "idRent": 5,
+  "idUser": 2,
+  "idProduct": 10,
+  "status": "accepted",
+  "dataStart": "2025-06-03T00:00:00.000Z",
+  "dataEnd": "2025-06-10T00:00:00.000Z",
+  "createdAt": "...",
+  "updatedAt": "..."
 }
 ```

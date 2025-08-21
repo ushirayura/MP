@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/authMiddleware')
 
 router.post('/create', productController.create)
 router.get('/getAll', productController.sort)
-router.get('/:productId', productController.getOne)
+router.get('/:id', productController.getOne)
 router.delete('/remove', productController.remove)
 
 

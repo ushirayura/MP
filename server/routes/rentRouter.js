@@ -1,8 +1,11 @@
-const Router = require('express')
-const router = new Router()
+const Router = require('express');
+const router = new Router();
+const rentController = require('../controllers/rentController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-router.post('/',)
-router.get('/')
+router.use(authMiddleware);
+router.post('/create', rentController.create);
+router.get('/getAll', rentController.getAll);
+router.put('/:id/status', rentController.updateStatus);
 
-
-module.exports = router
+module.exports = router;
