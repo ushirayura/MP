@@ -96,6 +96,8 @@ Favourite.belongsTo(User, { foreignKey: 'userId' });
 Product.hasMany(Favourite, { foreignKey: 'idProduct' });
 Favourite.belongsTo(Product, { foreignKey: 'idProduct' });
 
+Review.belongsTo(User, { foreignKey: 'idUser' });
+
 module.exports = {
     User,
     Product,
