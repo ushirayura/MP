@@ -251,36 +251,6 @@ Content-Type: application/json
   - Сообщение: `Ошибка при изменении пароля`.  
 - **401 Unauthorized** — возможна, если аутентификационный middleware не установил `req.user` (отсутствует или недействителен токен).
 
-```http
-GET http://localhost:PORT/api/user/check
-Authorization: Bearer <существующий_jwt_токен>
-```
-
-### Пример входных данных
-
-```http
-GET http://localhost:PORT/api/user/check
-Authorization: Bearer <существующий_jwt_токен>
-```
-
-### Возможные ошибки
-
-- **401 Unauthorized**: Если токен в заголовке Authorization отсутствует или недействителен (это проверяется middleware).  
-  - Сообщение: стандартное сообщение middleware о недействительном токене.  
-- **500 Internal Server Error**: Любые другие ошибки при генерации нового токена.  
-  - Сообщение: информация об ошибке из `ApiError.internal`.
-
-### Успешный выход
-
-```json
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmUiOiIrNzkxNjEyMzQ1NjciLCJpYXQiOjE2ODA4MzE2MDAsImV4cCI6MTY4MDg2NDAwMH0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-}
-```
-
 ---
 
 Функция check предназначена для проверки и обновления JWT-токена. Она вызывается после того, как промежуточный обрабатывающий слой (middleware) аутентифицировал пользователя и записал в объект req.user его id и phone. Функция генерирует новый JWT-токен через generateJwt на основе req.user.id и req.user.phone, тем самым продлевая срок действия токена еще на 24 часа. Затем она возвращает ответ в формате JSON, содержащий обновленный токен.
