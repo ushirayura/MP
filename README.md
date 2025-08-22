@@ -104,7 +104,9 @@ Content-Type: application/json
   }
 }
 ```
+
 ---
+
 ### `getProfile(req, res, next)`
 
 **Что делает:**  
