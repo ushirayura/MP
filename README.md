@@ -117,11 +117,14 @@ Content-Type: application/json
 5. При любой непредвиденной ошибке логгирует ошибку в консоль и вызывает `next(ApiError.internal('Ошибка при получении данных пользователя'))`.
 
 **Пример запроса (HTTP GET `http://localhost:PORT/api/user/profile`):**  
+```http
 GET /api/user/profile HTTP/1.1
 Host: localhost:PORT
 Authorization: Bearer <JWT_TOKEN>
+```
 
 **Пример успешного ответа:**  
+```json
 {
   "id": 42,
   "name": "Иван Иванов",
@@ -129,6 +132,7 @@ Authorization: Bearer <JWT_TOKEN>
   "email": "ivan@example.com",
   "birthday": "1990-05-20"
 }
+```
 
 **Возможные ошибки:**  
 - **404 Not Found** — пользователь с указанным `id` не найден.  
@@ -137,7 +141,6 @@ Authorization: Bearer <JWT_TOKEN>
   - Сообщение: `Ошибка при получении данных пользователя`.  
 - **401 Unauthorized** — возможна, если аутентификационный middleware не установил `req.user` (т.е. отсутствует или недействителен токен).  
   - Поведение не реализовано в функции напрямую — предполагается, что аутентификация обрабатывается отдельно.
-```
 
 ---
 
@@ -198,9 +201,8 @@ Content-Type: application/json
   - Сообщение: `Ошибка при обновлении данных пользователя`.  
 - **401 Unauthorized** — возможна, если аутентификационный middleware не установил `req.user` (отсутствует или недействителен токен).
 
-```
-
 ---
+
 ### `updatePassword(req, res, next)`
 
 **Что делает:**  
@@ -249,6 +251,34 @@ Content-Type: application/json
   - Сообщение: `Ошибка при изменении пароля`.  
 - **401 Unauthorized** — возможна, если аутентификационный middleware не установил `req.user` (отсутствует или недействителен токен).
 
+```http
+GET http://localhost:PORT/api/user/check
+Authorization: Bearer <существующий_jwt_токен>
+```
+
+### Пример входных данных
+
+```http
+GET http://localhost:PORT/api/user/check
+Authorization: Bearer <существующий_jwt_токен>
+```
+
+### Возможные ошибки
+
+- **401 Unauthorized**: Если токен в заголовке Authorization отсутствует или недействителен (это проверяется middleware).  
+  - Сообщение: стандартное сообщение middleware о недействительном токене.  
+- **500 Internal Server Error**: Любые другие ошибки при генерации нового токена.  
+  - Сообщение: информация об ошибке из `ApiError.internal`.
+
+### Успешный выход
+
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmUiOiIrNzkxNjEyMzQ1NjciLCJpYXQiOjE2ODA4MzE2MDAsImV4cCI6MTY4MDg2NDAwMH0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+}
 ```
 
 ---
