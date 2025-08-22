@@ -1294,8 +1294,189 @@ Content-Type: application/json
 - **500 Internal Server Error**: внутренняя ошибка при выполнении запроса.  
   - Сообщение: `"Ошибка при удалении отзыва"`.  
 
-----
+---
 
 # Структура БД
 
 ---
+
+База данных содержит пять основных сущностей: `User` (пользователи), `Product` (товары), `Rent` (аренды), `Review` (отзывы) и `Favourite` (избранное). Пользователи создают продукты, другие пользователи могут брать эти продукты в аренду, оставлять отзывы и добавлять в избранное. Модель построена на отношениях «один-ко-многим».
+
+---
+
+## Описание таблиц и полей
+
+*User*  
+- `idUser` — уникальный идентификатор пользователя.  
+- `name`, `secondName`, `middleName` — имя и вторые имена (фамилия/отчество).  
+- `birthday` — дата рождения.  
+- `phone`, `email` — контактные данные (в модели отмечены как уникальные).  
+- `password` — хеш пароля.  
+- `admin` — флаг администратора.
+
+*Product*  
+- `idProduct` — уникальный идентификатор товара.  
+- `userId` — владелец товара (ссылка на `User.idUser`).  
+- `name`, `description`, `category`, `photo` — информация о товаре.  
+- `price` — цена (в модели как FLOAT).  
+- `rating` — средний рейтинг товара (агрегат из отзывов).
+
+*Rent*  
+- `idRent` — идентификатор аренды.  
+- `idUser` — арендатор (ссылка на `User`).  
+- `idProduct` — арендованный продукт (ссылка на `Product`).  
+- `status` — состояние аренды (`pending`, `accepted`, `rejected`).  
+- `dataStart`, `dataEnd` — даты начала и окончания аренды.
+
+*Review*  
+- `idReview` — идентификатор отзыва.  
+- `idUser` — автор отзыва (ссылка на `User`).  
+- `idProduct` — товар, к которому оставлен отзыв (ссылка на `Product`).  
+- `rate` — оценка (1–5).  
+- `comment` — текст отзыва.  
+- `uploadDate` — время создания/обновления отзыва.
+
+*Favourite*  
+- `idFavourite` — идентификатор записи в избранном.  
+- `userId` — пользователь, добавивший в избранное.  
+- `idProduct` — добавленный в избранное товар.
+
+## Связи между таблицами
+
+---
+
+Основные сущности: `User`, `Product`, `Rent`, `Review`, `Favourite`. Все связи — стандартные «один-ко-многим» (1 → N) в различных комбинациях.
+
+---
+
+1. User ↔ Product
+Sequelize:
+```
+User.hasMany(Product, { foreignKey: 'userId' });
+Product.belongsTo(User, { foreignKey: 'userId' });
+```
+Кардинальность: `User (1) — (N) Product`
+FK: `product.userId` → `user.idUser`
+Смысл: каждый продукт принадлежит одному пользователю (владельцу), пользователь может иметь много продуктов.
+
+---
+
+2. User ↔ Rent (как арендатор)
+Sequelize:
+```
+User.hasMany(Rent, { foreignKey: 'idUser' });
+Rent.belongsTo(User, { foreignKey: 'idUser' });
+```
+Кардинальность: `User (1) — (N) Rent`
+FK: `rent.idUser` → `user.idUser`
+Смысл: пользователь (арендатор) может иметь много записей аренды.
+
+---
+
+3. Product ↔ Rent
+Sequelize:
+```
+Product.hasMany(Rent, { foreignKey: 'idProduct' });
+Rent.belongsTo(Product, { foreignKey: 'idProduct' });
+```
+Кардинальность: `Product (1) — (N) Rent`
+FK: `rent.idProduct` → `product.idProduct`
+Смысл: один продукт может участвовать во многих арендах (разные периоды/пользователи).
+
+---
+
+4. Product ↔ Review
+Sequelize:
+```
+Product.hasMany(Review, { foreignKey: 'idProduct' });
+Review.belongsTo(Product, { foreignKey: 'idProduct' });
+```
+Кардинальность: `Product (1) — (N) Review`
+FK: `review.idProduct` → `product.idProduct`
+Смысл: один продукт — много отзывов.
+
+---
+
+5. User ↔ Review
+Sequelize:
+```
+User.hasMany(Review, { foreignKey: 'idUser' });
+Review.belongsTo(User, { foreignKey: 'idUser' });
+```
+Кардинальность: `User (1) — (N) Review`
+FK: `review.idUser` → `user.idUser`
+Смысл: пользователь может написать много отзывов.
+
+---
+
+6. User ↔ Favourite
+Sequelize:
+```
+User.hasMany(Favourite, { foreignKey: 'userId' });
+Favourite.belongsTo(User, { foreignKey: 'userId' });
+```
+Кардинальность: `User (1) — (N) Favourite`
+FK: `favourite.userId` → `user.idUser`
+Смысл: пользователь может иметь много записей в избранном.
+
+---
+
+7. Product ↔ Favourite
+Sequelize:
+```
+Product.hasMany(Favourite, { foreignKey: 'idProduct' });
+Favourite.belongsTo(Product, { foreignKey: 'idProduct' });
+```
+Кардинальность: `Product (1) — (N) Favourite`
+FK: `favourite.idProduct` → `product.idProduct`
+Смысл: продукт может быть в избранном у многих пользователей.
+
+---
+
+Визуализация
+
+Легенда: `1` — одна, `N` — много. Стрелки показывают направление foreign key.
+
+ASCII-диаграмма (компактно)
+```
+User (idUser)
+  |1
+  |---< Product (userId)                Product (idProduct)
+  |1                                      |1
+  |---< Rent (idUser)  <--- Rent ---->---|---< Review (idProduct)
+  |1                                      |
+  |---< Review (idUser)                   |
+  |1                                      |1
+  |---< Favourite (userId)  <--- Favourite --->--- (idProduct)
+```
+
+Более читаемо (разбивка по сущностям):
+
+```
+User
+  PK idUser
+  ├─< Product.userId     (User 1 -> N Product)
+  ├─< Rent.idUser        (User 1 -> N Rent)
+  ├─< Review.idUser      (User 1 -> N Review)
+  └─< Favourite.userId   (User 1 -> N Favourite)
+
+Product
+  PK idProduct
+  ├─> Product.userId -> User.idUser  (belongsTo)
+  ├─< Rent.idProduct      (Product 1 -> N Rent)
+  ├─< Review.idProduct    (Product 1 -> N Review)
+  └─< Favourite.idProduct (Product 1 -> N Favourite)
+```
+
+Mermaid (если платформа рендерит mermaid, вставьте этот блок)
+```mermaid
+erDiagram
+    USER ||--o{ PRODUCT : "owns"
+    USER ||--o{ RENT : "rents_as_user"
+    PRODUCT ||--o{ RENT : "has_rents"
+    PRODUCT ||--o{ REVIEW : "has_reviews"
+    USER ||--o{ REVIEW : "writes"
+    USER ||--o{ FAVOURITE : "favorites"
+    PRODUCT ||--o{ FAVOURITE : "fav_by"
+```
+
