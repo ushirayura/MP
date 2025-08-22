@@ -1116,11 +1116,10 @@ Content-Type: application/json
 4. Возвращает JSON-объект со статистикой отзывов: `userId`, средняя оценка (`avgRating`), общее количество отзывов (`totalReviews`).  
 
 **Пример запроса (HTTP GET `http://localhost:PORT/api/review/getStatsByUser`):**  
-```json
-Headers:
-{
-  "Authorization": "Bearer <token>"
-}
+```http
+GET /api/review/stats/user HTTP/1.1
+Host: localhost:PORT
+Authorization: Bearer <token>
 ```
 
 **Пример успешного ответа:**  
@@ -1136,13 +1135,12 @@ Content-Type: application/json
 ```
 
 **Возможные ошибки:**  
-- **401 Unauthorized**: если пользователь не авторизован или `req.user` отсутствует.  
+- **401 Unauthorized** — если пользователь не авторизован или `req.user` отсутствует.  
   - Сообщение: `"Не авторизован"`.  
-- **404 Not Found**: если пользователь не найден в базе.  
+- **404 Not Found** — если пользователь не найден в базе.  
   - Сообщение: `"Пользователь не найден"`.  
-- **500 Internal Server Error**: внутренняя ошибка при выполнении запроса.  
-  - Сообщение: `"Ошибка при получении статистики отзывов пользователя"`.  
-```
+- **500 Internal Server Error** — внутренняя ошибка при выполнении запроса.  
+  - Сообщение: `"Ошибка при получении статистики отзывов пользователя"`.
 
 ---
 
@@ -1155,15 +1153,14 @@ Content-Type: application/json
    - Пользователя (`idUser`, `name`, `secondName`, `middleName`)  
    - Товара (`idProduct`, `name`, `description`, `price`)  
 4. Если отзыв не найден — возвращает `404 Not Found`.  
-5. Проверяет, совпадает ли `idUser` из отзыва с текущим авторизованным пользователем. Если нет — `403 Forbidden`.  
+5. Проверяет, совпадает ли `idUser` из отзыва с текущим авторизованным пользователем. Если нет — возвращает `403 Forbidden`.  
 6. Если всё корректно — возвращает JSON-объект отзыва.  
 
 **Пример запроса (HTTP GET `http://localhost:PORT/api/review/getOne/15`):**  
-```json
-Headers:
-{
-  "Authorization": "Bearer <token>"
-}
+```http
+GET /api/review/getOne/15 HTTP/1.1
+Host: localhost:PORT
+Authorization: Bearer <token>
 ```
 
 **Пример успешного ответа:**  
@@ -1192,16 +1189,15 @@ Content-Type: application/json
 ```
 
 **Возможные ошибки:**  
-- **400 Bad Request**: некорректный параметр `idReview`.  
+- **400 Bad Request** — некорректный параметр `idReview`.  
   - Сообщение: `"Некорректный idReview"`.  
-- **404 Not Found**: отзыв не найден.  
+- **404 Not Found** — отзыв не найден.  
   - Сообщение: `"Отзыв не найден"`.  
-- **403 Forbidden**: пользователь пытается просмотреть чужой отзыв.  
+- **403 Forbidden** — пользователь пытается просмотреть чужой отзыв.  
   - Сообщение: `"Вы не можете просматривать чужой отзыв"`.  
-- **500 Internal Server Error**: внутренняя ошибка при выполнении запроса.  
-  - Сообщение: `"Ошибка при получении отзыва"`.  
-```
-
+- **500 Internal Server Error** — внутренняя ошибка при выполнении запроса.  
+  - Сообщение: `"Ошибка при получении отзыва"`.
+  
 ---
 
 ### `update(req, res, next)`
@@ -1218,14 +1214,12 @@ Content-Type: application/json
 9. Возвращает подтверждение и обновлённый объект отзыва.  
 
 **Пример запроса (HTTP PUT `http://localhost:PORT/api/review/update`):**  
-```json
-Headers:
-{
-  "Authorization": "Bearer <token>",
-  "Content-Type": "application/json"
-}
+```http
+PUT /api/review/update HTTP/1.1
+Host: localhost:PORT
+Authorization: Bearer <token>
+Content-Type: application/json
 
-Body:
 {
   "idReview": 12,
   "rate": 4,
@@ -1259,8 +1253,7 @@ Content-Type: application/json
 - **403 Forbidden**: пользователь пытается изменить чужой отзыв.  
   - Сообщение: `"Вы не можете изменять чужой отзыв"`.  
 - **500 Internal Server Error**: внутренняя ошибка при выполнении запроса.  
-  - Сообщение: `"Ошибка при обновлении отзыва"`.  
-```
+  - Сообщение: `"Ошибка при обновлении отзыва"`.
 
 ---
 
@@ -1276,7 +1269,12 @@ Content-Type: application/json
 7. Возвращает сообщение об успешном удалении.  
 
 **Пример запроса (HTTP DELETE `http://localhost:PORT/api/review/delete`):**  
-```json
+```http
+DELETE /api/review/delete HTTP/1.1
+Host: localhost:PORT
+Content-Type: application/json
+Authorization: Bearer <token>
+
 {
   "idReview": 12
 }
