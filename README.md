@@ -546,7 +546,7 @@ Content-Type: application/json
 5. В случае успешного удаления возвращает JSON-ответ с сообщением `"Товар удалён из избранного"`.  
 6. В случае любых других ошибок вызывает `next(ApiError.internal(e))`, возвращая ошибку `500 Internal Server Error`.
 
-**Пример входных данных (HTTP DELETE `http://localhost:PORT/api/favourite/remove`):**  
+**Пример входных данных (HTTP DELETE `http://localhost:PORT/api/favourite/delete`):**  
 ```json
 {
   "userId": 1,
