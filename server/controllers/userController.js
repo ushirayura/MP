@@ -108,7 +108,7 @@ class UserController {
 
     async getProfile(req, res, next) {
         try {
-            const userId = req.user.id; // берем id из токена
+            const userId = req.user.id;
 
             const user = await User.findByPk(userId, {
                 attributes: ['idUser', 'name', 'phone', 'email', 'birthday']
@@ -133,16 +133,14 @@ class UserController {
 
     async updateProfile(req, res, next) {
         try {
-            const userId = req.user.id; // берём id из токена
+            const userId = req.user.id;
             const { name, phone, email, birthday } = req.body;
             
-            // Ищем пользователя по idUser
             const user = await User.findOne({ where: { idUser: userId } });
             if (!user) {
                 return next(ApiError.notFound('Пользователь не найден'));
             }
 
-            // Проверяем уникальность телефона
             if (phone && phone !== user.phone) {
                 const existingPhone = await User.findOne({ where: { phone } });
                 if (existingPhone) {
@@ -151,7 +149,6 @@ class UserController {
                 user.phone = phone;
             }
 
-            // Проверяем уникальность email
             if (email && email !== user.email) {
                 const existingEmail = await User.findOne({ where: { email } });
                 if (existingEmail) {
@@ -183,7 +180,7 @@ class UserController {
 
     async updatePassword(req, res, next) {
         try {
-            const userId = req.user.id; // берём id пользователя из токена
+            const userId = req.user.id;
             const { oldPassword, newPassword } = req.body;
 
             if (!oldPassword || !newPassword) {
@@ -195,13 +192,11 @@ class UserController {
                 return next(ApiError.notFound('Пользователь не найден'));
             }
 
-            // Проверяем старый пароль
             const isMatch = await bcrypt.compare(oldPassword, user.password);
             if (!isMatch) {
                 return next(ApiError.badRequest('Старый пароль указан неверно'));
             }
 
-            // Хэшируем и сохраняем новый пароль
             const hash = await bcrypt.hash(newPassword, 5);
             user.password = hash;
             await user.save();
