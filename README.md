@@ -258,7 +258,7 @@ Content-Type: application/json
 ### Пример входных данных
 
 ```http
-GET http://localhost:PORT/api/user/check
+GET http://localhost:PORT/api/user/auth
 Authorization: Bearer <существующий_jwt_токен>
 ```
 
@@ -453,7 +453,7 @@ Content-Type: application/json
 
 ---
 
-**Пример входных данных (HTTP DELETE `http://localhost:PORT/api/product/remove`):**  
+**Пример входных данных (HTTP DELETE `http://localhost:PORT/api/product/delete`):**  
 ```json
 {
   "userId": 1,
