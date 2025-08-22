@@ -105,6 +105,113 @@ class UserController {
         const token = generateJwt(req.user.id, req.user.phone);
         res.json({token});
     }
+
+    async getProfile(req, res, next) {
+        try {
+            const userId = req.user.id; // берем id из токена
+
+            const user = await User.findByPk(userId, {
+                attributes: ['idUser', 'name', 'phone', 'email', 'birthday']
+            });
+
+            if (!user) {
+                return next(ApiError.notFound('Пользователь не найден'));
+            }
+
+            return res.json({
+                id: user.idUser,
+                name: user.name,
+                phone: user.phone,
+                email: user.email,
+                birthday: user.birthday
+            });
+        } catch (e) {
+            console.error('Get profile error:', e);
+            return next(ApiError.internal('Ошибка при получении данных пользователя'));
+        }
+    }
+
+    async updateProfile(req, res, next) {
+        try {
+            const userId = req.user.id; // берём id из токена
+            const { name, phone, email, birthday } = req.body;
+            
+            // Ищем пользователя по idUser
+            const user = await User.findOne({ where: { idUser: userId } });
+            if (!user) {
+                return next(ApiError.notFound('Пользователь не найден'));
+            }
+
+            // Проверяем уникальность телефона
+            if (phone && phone !== user.phone) {
+                const existingPhone = await User.findOne({ where: { phone } });
+                if (existingPhone) {
+                    return next(ApiError.badRequest('Пользователь с таким номером телефона уже существует'));
+                }
+                user.phone = phone;
+            }
+
+            // Проверяем уникальность email
+            if (email && email !== user.email) {
+                const existingEmail = await User.findOne({ where: { email } });
+                if (existingEmail) {
+                    return next(ApiError.badRequest('Пользователь с таким email уже существует'));
+                }
+                user.email = email;
+            }
+
+            if (name) user.name = name;
+            if (birthday) user.birthday = birthday;
+
+            await user.save();
+
+            return res.json({
+                message: 'Данные пользователя успешно обновлены',
+                user: {
+                    id: user.idUser,
+                    name: user.name,
+                    phone: user.phone,
+                    email: user.email,
+                    birthday: user.birthday
+                }
+            });
+        } catch (e) {
+            console.error('Update profile error:', e);
+            return next(ApiError.internal('Ошибка при обновлении данных пользователя'));
+        }
+    }
+
+    async updatePassword(req, res, next) {
+        try {
+            const userId = req.user.id; // берём id пользователя из токена
+            const { oldPassword, newPassword } = req.body;
+
+            if (!oldPassword || !newPassword) {
+                return next(ApiError.badRequest('Необходимо указать старый и новый пароли'));
+            }
+
+            const user = await User.findByPk(userId);
+            if (!user) {
+                return next(ApiError.notFound('Пользователь не найден'));
+            }
+
+            // Проверяем старый пароль
+            const isMatch = await bcrypt.compare(oldPassword, user.password);
+            if (!isMatch) {
+                return next(ApiError.badRequest('Старый пароль указан неверно'));
+            }
+
+            // Хэшируем и сохраняем новый пароль
+            const hash = await bcrypt.hash(newPassword, 5);
+            user.password = hash;
+            await user.save();
+
+            return res.json({ message: 'Пароль успешно изменён' });
+        } catch (e) {
+            console.error('Update password error:', e);
+            return next(ApiError.internal('Ошибка при изменении пароля'));
+        }
+    }
 }
 
 module.exports = new UserController();
