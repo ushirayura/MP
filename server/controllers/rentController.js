@@ -6,7 +6,7 @@ class RentController {
   async create(req, res, next) {
     try {
       const { idProduct, dataStart, dataEnd } = req.body;
-      const renterId = req.user.idUser;
+      const renterId = req.user.id;
 
       if (!idProduct || !dataStart || !dataEnd) {
         return next(ApiError.badRequest('idProduct, dataStart и dataEnd обязательны'));
@@ -61,32 +61,61 @@ class RentController {
 
   async getAll(req, res, next) {
     try {
-      const { role } = req.query;
-      const userId = req.user.idUser;
+      const userId = req.user?.idUser ?? req.user?.id;
+      if (!userId) return next(ApiError.unauthorized('Не авторизован'));
 
-      const where = {};
-      if (role === 'renter') {
-        where.idUser = userId;
-      } else if (role === 'owner') {
-        const myProducts = await Product.findAll({
-          where: { userId },
-          attributes: ['idProduct']
-        });
-        where.idProduct = { [Op.in]: myProducts.map(p => p.idProduct) };
-      }
+      const myProducts = await Product.findAll({
+        where: { userId },
+        attributes: ['idProduct']
+      });
+      const myProductIds = myProducts.map(p => p.idProduct);
+
+      const where = {
+        [Op.or]: [
+          { idUser: userId },
+          ...(myProductIds.length ? [{ idProduct: { [Op.in]: myProductIds } }] : [])
+        ]
+      };
 
       const rents = await Rent.findAll({
         where,
         include: [
-          { model: Product, attributes: ['name', 'photo', 'price'] },
-          { model: User,    attributes: ['name', 'secondName'] },
+          {
+            model: Product,
+            attributes: ['name', 'photo'],
+            include: [{ model: User, attributes: ['name', 'phone'] }]
+          },
+          {
+            model: User,
+            attributes: ['name', 'phone']
+          }
         ],
         order: [['dataStart', 'DESC']],
       });
 
-      return res.json(rents);
-    } catch (err) {
-      next(err);
+      const output = rents.map(r => {
+        const product = r.product ? r.product.toJSON() : null;
+        const renter  = r.user    ? r.user.toJSON()    : null;
+        const owner   = product && product.user ? product.user : null;
+
+        const isCurrentUserRenter = r.idUser === userId;
+        const other = isCurrentUserRenter ? owner : renter;
+
+        return {
+          idRent: r.idRent,
+          productName: product?.name ?? null,
+          photo: product?.photo ?? null,
+          dataStart: r.dataStart,
+          dataEnd: r.dataEnd,
+          otherName: other?.name ?? null,
+          otherPhone: other?.phone ?? null,
+          status: r.status
+        };
+      });
+
+      return res.json(output);
+    } catch (e) {
+      next(e);
     }
   }
 
@@ -94,18 +123,21 @@ class RentController {
     try {
       const rentId = parseInt(req.params.id, 10);
       const { status } = req.body;
-      const ownerId = req.user.idUser;
-
-      // валидация
+      const ownerId = req.user.id;
+      
       if (!rentId || !['accepted', 'rejected'].includes(status)) {
         return next(ApiError.badRequest('Неверные параметры запроса'));
       }
 
       const rent = await Rent.findByPk(rentId, { include: Product });
+
       if (!rent) {
         return next(ApiError.notFound('Запрос не найден'));
       }
-      if (rent.Product.userId !== ownerId) {
+      if (!rent.product) {
+        return next(ApiError.notFound('Товар для аренды не найден'));
+      }
+      if (rent.product.userId !== ownerId) {
         return next(ApiError.forbidden('Не ваш товар'));
       }
 
@@ -113,8 +145,8 @@ class RentController {
       await rent.save();
 
       return res.json(rent);
-    } catch (err) {
-      next(err);
+    } catch (e) {
+      next(e);
     }
   }
 }
