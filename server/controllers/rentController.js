@@ -149,6 +149,39 @@ class RentController {
       next(e);
     }
   }
+
+  async getPending(req, res, next) {
+    try {
+      const userId = req.user?.idUser ?? req.user?.id;
+      if (!userId) return next(ApiError.unauthorized('Не авторизован'));
+
+      const rents = await Rent.findAll({
+        where: {
+          idUser: userId,
+          status: 'pending'
+        },
+        include: [
+          {
+            model: Product,
+            attributes: ['name', 'photo']
+          }
+        ],
+        order: [['dataStart', 'ASC']]
+      });
+
+      const output = rents.map(r => ({
+        idRent: r.idRent,
+        productName: r.product?.name ?? null,
+        photo: r.product?.photo ?? null,
+        dataStart: r.dataStart,
+        dataEnd: r.dataEnd
+      }));
+
+      return res.json(output);
+    } catch (e) {
+      next(e);
+    }
+  }
 }
 
 module.exports = new RentController();
