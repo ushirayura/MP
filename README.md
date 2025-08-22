@@ -922,7 +922,6 @@ Content-Type: application/json
 - **403 Forbidden** — пользователь не имеет права оставить отзыв (нет завершённой аренды).  
   - Сообщение: `Нельзя оставлять отзыв: нет завершённой аренды этого товара`.  
 - **500 Internal Server Error** — ошибка при сохранении отзыва или обновлении рейтинга.
-```
 
 ---
 
@@ -1001,7 +1000,6 @@ Content-Type: application/json
 - **404 Not Found** — товар с указанным `idProduct` не найден.  
   - Сообщение: `Товар не найден`.  
 - **500 Internal Server Error** — ошибка при запросе отзывов или подсчёте агрегатов.
-```
 
 ---
 
@@ -1018,10 +1016,10 @@ Content-Type: application/json
 6. В случае ошибки логирует её и возвращает `500 Internal Server Error`.
 
 **Пример запроса (HTTP GET `http://localhost:PORT/api/review/getAllByUser`):**  
-```json
-Headers: {
-  "Authorization": "Bearer <token>"
-}
+```http
+GET /api/review/user HTTP/1.1
+Host: localhost:PORT
+Authorization: Bearer <token>
 ```
 
 **Пример успешного ответа:**  
@@ -1056,7 +1054,6 @@ Content-Type: application/json
   - Сообщение: `"Пользователь не найден"`.  
 - **500 Internal Server Error**: ошибка при получении отзывов.  
   - Сообщение: `"Ошибка при получении отзывов пользователя"`.
-```
 
 ---
 
@@ -1073,7 +1070,11 @@ Content-Type: application/json
 6. В случае ошибки возвращает соответствующую ошибку через `ApiError`.  
 
 **Пример входных данных (HTTP POST `http://localhost:PORT/api/review/getStatsByProduct`):**  
-```json
+```http
+POST /api/review/stats HTTP/1.1
+Host: localhost:PORT
+Content-Type: application/json
+
 {
   "idProduct": 5
 }
@@ -1102,6 +1103,7 @@ Content-Type: application/json
   "avgRating": 4.3
 }
 ```
+
 
 ---
 
