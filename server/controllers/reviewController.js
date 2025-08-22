@@ -3,9 +3,8 @@ const sequelize = require('../db');
 const { Op, fn, col } = require('sequelize');
 const ApiError = require('../error/ApiError');
 
+// Пользователь может оставить отзыв, если у него была принятая аренда для этого товара и дата окончания аренды уже прошла.
 async function canUserLeaveReview(userId, idProduct) {
-  // Правило: пользователь может оставить отзыв, если у него была принятая аренда
-  // для этого товара и дата окончания аренды уже прошла.
   if (!userId || !idProduct) return false;
 
   const rent = await Rent.findOne({
@@ -13,7 +12,7 @@ async function canUserLeaveReview(userId, idProduct) {
       idUser: userId,
       idProduct,
       status: 'accepted',
-      dataEnd: { [Op.lt]: new Date() } // аренда завершилась
+      dataEnd: { [Op.lt]: new Date() }
     }
   });
   return !!rent;
@@ -21,7 +20,6 @@ async function canUserLeaveReview(userId, idProduct) {
 
 class ReviewController {
   async create(req, res, next) {
-    // Нормализация id пользователя
     const userId = req.user?.idUser ?? req.user?.id;
 
     const { idProduct, rate, comment } = req.body;
@@ -33,7 +31,6 @@ class ReviewController {
       return next(ApiError.badRequest('Неверный idProduct'));
     }
 
-    // дружелюбная валидация rate (можно прислать "5" или 4.5)
     const rateNum = Number(rate);
     if (!Number.isFinite(rateNum)) {
       return next(ApiError.badRequest('Неверный формат rate'));
@@ -43,22 +40,18 @@ class ReviewController {
     }
 
     try {
-      // Проверим, что продукт существует (быстрая проверка)
       const product = await Product.findByPk(idProdNum);
       if (!product) {
         return next(ApiError.notFound('Товар не найден'));
       }
 
-      // Бизнес-логика: пользователь должен иметь право оставлять отзыв
       const canLeave = await canUserLeaveReview(userId, idProdNum);
       if (!canLeave) {
         return next(ApiError.forbidden('Нельзя оставлять отзыв: нет завершённой аренды этого товара'));
       }
 
-      // Транзакция: создание отзыва + пересчёт среднего
       const t = await sequelize.transaction();
       try {
-        // Проверка на дубль (по бизнес-логике: один отзыв от пользователя на товар)
         const existed = await Review.findOne({
           where: { idUser: userId, idProduct: idProdNum },
           transaction: t
@@ -100,19 +93,16 @@ class ReviewController {
 
   async getAllByProduct(req, res, next) {
         try {
-            // idProduct приходит только в теле запроса
             const idProduct = parseInt(req.body.idProduct, 10);
             if (Number.isNaN(idProduct)) {
             return next(ApiError.badRequest('Неверный idProduct в теле запроса'));
             }
 
-            // Проверка существования продукта
             const product = await Product.findByPk(idProduct);
             if (!product) {
             return next(ApiError.notFound('Товар не найден'));
             }
 
-            // Получаем все отзывы (с информацией об авторе, без пароля)
             const rows = await Review.findAll({
             where: { idProduct },
             include: [
@@ -146,15 +136,13 @@ class ReviewController {
 
     async getAllByUser(req, res, next) {
         try {
-            const idUser = req.user.id; // берем из токена
+            const idUser = req.user.id;
 
-            // Проверка существования пользователя
             const user = await User.findByPk(idUser);
             if (!user) {
             return next(ApiError.notFound('Пользователь не найден'));
             }
 
-            // Получаем все отзывы пользователя (с информацией о товаре)
             const rows = await Review.findAll({
             where: { idUser },
             include: [
@@ -225,15 +213,13 @@ class ReviewController {
 
     async getStatsByUser(req, res, next) {
         try {
-            const idUser = req.user.id; // берем из токена
+            const idUser = req.user.id;
 
-            // Проверка существования пользователя
             const user = await User.findByPk(idUser);
             if (!user) {
             return next(ApiError.notFound('Пользователь не найден'));
             }
 
-            // Считаем агрегаты
             const avgRes = await Review.findOne({
             where: { idUser },
             attributes: [[fn('AVG', col('rate')), 'avgRate']],
@@ -256,14 +242,13 @@ class ReviewController {
 
     async getOne(req, res, next) {
         try {
-            const { idReview } = req.params; // idReview из URL
+            const { idReview } = req.params;
             const reviewId = parseInt(idReview, 10);
 
             if (Number.isNaN(reviewId)) {
                 return next(ApiError.badRequest('Некорректный idReview'));
             }
 
-            // Находим отзыв (с информацией о пользователе и товаре)
             const review = await Review.findByPk(reviewId, {
                 include: [
                     {
@@ -281,10 +266,8 @@ class ReviewController {
                 return next(ApiError.notFound('Отзыв не найден'));
             }
 
-            // Получаем id авторизованного пользователя из токена
             const userId = req.user.id;
 
-            // Проверяем, что отзыв принадлежит пользователю
             if (review.idUser !== userId) {
                 return next(ApiError.forbidden('Вы не можете просматривать чужой отзыв'));
             }
@@ -305,22 +288,18 @@ class ReviewController {
             return next(ApiError.badRequest('Не передан idReview'));
             }
 
-            // Находим отзыв
             const review = await Review.findByPk(idReview);
             if (!review) {
             return next(ApiError.notFound('Отзыв не найден'));
             }
 
-            // Проверяем принадлежность пользователю
             if (review.idUser !== userId) {
             return next(ApiError.forbidden('Вы не можете изменять чужой отзыв'));
             }
 
-            // Обновляем поля (только если переданы)
             if (typeof rate !== 'undefined') review.rate = rate;
             if (typeof comment !== 'undefined') review.comment = comment;
 
-            // Обновляем дату
             review.uploadDate = new Date();
 
             await review.save();
@@ -338,24 +317,21 @@ class ReviewController {
     async delete(req, res, next) {
         try {
             const { idReview } = req.body;
-            const userId = req.user.id; // Берём id авторизованного пользователя
+            const userId = req.user.id;
 
             if (!idReview) {
             return next(ApiError.badRequest('Не передан idReview'));
             }
 
-            // Находим отзыв
             const review = await Review.findByPk(idReview);
             if (!review) {
             return next(ApiError.notFound('Отзыв не найден'));
             }
 
-            // Проверяем принадлежность пользователю
             if (review.idUser !== userId) {
             return next(ApiError.forbidden('Вы не можете удалять чужой отзыв'));
             }
 
-            // Удаляем отзыв
             await review.destroy();
 
             return res.json({ message: 'Отзыв успешно удалён' });
