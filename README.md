@@ -190,11 +190,11 @@ npm run build        # Собрать для продакшена (если на
 
 Для подробной документации API см. разделы ниже:
 
-- [API Эндпоинты Пользователей](#usercontroller)
-- [API Эндпоинты Продуктов](#productcontroller)
-- [API Эндпоинты Аренды](#rentcontroller)
-- [API Эндпоинты Отзывов](#reviewcontroller)
-- [API Эндпоинты Избранного](#favouritecontroller)
+- [API Эндпоинты Пользователей](#user-controller)
+- [API Эндпоинты Продуктов](#product-controller)
+- [API Эндпоинты Аренды](#rent-controller)
+- [API Эндпоинты Отзывов](#review-controller)
+- [API Эндпоинты Избранного](#favourite-controller)
 
 ---
 
@@ -212,7 +212,7 @@ npm run build        # Собрать для продакшена (если на
 
 ---
 
-## UserController {#usercontroller}
+## UserController {#user-controller}
 
 Функция registration принимает HTTP-запрос с полями email, password, name, birthday и phone из объекта req.body. Она проверяет, что обязательные поля phone, password, name и birthday присутствуют, и возвращает ошибку 400 Bad Request, если какое-либо из них отсутствует. Далее функция обращается к базе данных через модель User и проверяет, не существует ли уже пользователь с указанным номером телефона. Если пользователь с таким телефоном найден, возвращается ошибка 400 Bad Request. Если в запросе указан email, выполняется дополнительная проверка на его уникальность аналогичным образом. После успешных проверок пароль хешируется с помощью bcrypt, после чего создается новая запись пользователя в базе данных с сохранением email (или null, если email не передан), захешированного пароля, имени, даты рождения и телефона. Затем генерируется JWT-токен, содержащий id пользователя и номер телефона, с помощью функции generateJwt, в которой секретный ключ берется из переменной окружения SECRET_KEY (или используется значение по умолчанию 'my_secret_key'), а срок действия токена устанавливается в 24 часа. В конце функция возвращает ответ в формате JSON, включающий сгенерированный токен и данные о новом пользователе (id, email, name, birthday, phone). В случае любых ошибок во время выполнения операций функция перехватывает исключение и передает его в следующий middleware в виде ApiError.internal с сообщением ошибки и кодом 500 Internal Server Error.
 
@@ -493,7 +493,7 @@ Content-Type: application/json
 
 ---
 
-## ProductController {#productcontroller}
+## ProductController {#product-controller}
 
 ### `create(req, res, next)`
 
@@ -694,7 +694,7 @@ Content-Type: application/json
 
 ---
 
-## FavouriteController {#favouritecontroller}
+## FavouriteController {#favourite-controller}
 
 ### `create(req, res, next)`
 
@@ -852,7 +852,7 @@ Content-Type: application/json
 ```
 
 
-## RentController {#rentcontroller}
+## RentController {#rent-controller}
 
 ### `create(req, res, next)`
 
@@ -1073,7 +1073,7 @@ Content-Type: application/json
 - **500 Internal Server Error** — ошибка при запросе к базе данных или любая другая непредвиденная ошибка.  
 
 
-## ReviewController {#reviewcontroller}
+## ReviewController {#review-controller}
 
 ### `create(req, res, next)`
 
