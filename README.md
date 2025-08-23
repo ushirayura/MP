@@ -15,14 +15,15 @@
 ## UserController
 
 **Доступные функции:**
-- [`registration(req, res, next)`](#registrationreq-res-next)
-- [`login(req, res, next)`](#loginreq-res-next)
-- [`getProfile(req, res, next)`](#getprofilereq-res-next)
-- [`updateProfile(req, res, next)`](#updateprofilereq-res-next)
-- [`updatePassword(req, res, next)`](#updatepasswordreq-res-next)
+- [`registration(req, res, next)`](#registration-user)
+- [`login(req, res, next)`](#login-user)
+- [`getProfile(req, res, next)`](#getprofile-user)
+- [`updateProfile(req, res, next)`](#updateprofile-user)
+- [`updatePassword(req, res, next)`](#updatepassword-user)
 
 ---
 
+<a id="registration-user"></a>
 ### `registration(req, res, next)`
 
 **Что делает:**  
@@ -80,6 +81,7 @@ Content-Type: application/json
 
 ---
 
+<a id="login-user"></a>
 ### `login(req, res, next)`
 
 **Что делает:**  
@@ -146,6 +148,7 @@ Content-Type: application/json
 
 ---
 
+<a id="getprofile-user"></a>
 ### `getProfile(req, res, next)`
 
 **Что делает:**  
@@ -183,6 +186,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 ---
 
+<a id="updateprofile-user"></a>
 ### `updateProfile(req, res, next)`
 
 **Что делает:**  
@@ -242,6 +246,7 @@ Content-Type: application/json
 
 ---
 
+<a id="updatepassword-user"></a>
 ### `updatePassword(req, res, next)`
 
 **Что делает:**  
