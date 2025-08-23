@@ -142,7 +142,7 @@ server/
 
 ```bash
 # 1. Клонировать репозиторий
-git clone https://github.com/yourusername/rentshare.git
+git clone https://github.com/ushirayura/MP.git
 cd rentshare
 
 # 2. Установить зависимости
