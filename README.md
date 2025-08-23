@@ -1442,6 +1442,8 @@ Content-Type: application/json
 - `userId` — пользователь, добавивший в избранное.  
 - `idProduct` — добавленный в избранное товар.
 
+---
+
 ### Связи между таблицами
 
 Основные сущности: `User`, `Product`, `Rent`, `Review`, `Favourite`. Все связи — стандартные «один-ко-многим» (1 → N) в различных комбинациях.
@@ -1458,8 +1460,6 @@ Product.belongsTo(User, { foreignKey: 'userId' });
 FK: `product.userId` → `user.idUser`
 Смысл: каждый продукт принадлежит одному пользователю (владельцу), пользователь может иметь много продуктов.
 
----
-
 2. User ↔ Rent (как арендатор)
 Sequelize:
 ```
@@ -1469,8 +1469,6 @@ Rent.belongsTo(User, { foreignKey: 'idUser' });
 Кардинальность: `User (1) — (N) Rent`
 FK: `rent.idUser` → `user.idUser`
 Смысл: пользователь (арендатор) может иметь много записей аренды.
-
----
 
 3. Product ↔ Rent
 Sequelize:
@@ -1482,8 +1480,6 @@ Rent.belongsTo(Product, { foreignKey: 'idProduct' });
 FK: `rent.idProduct` → `product.idProduct`
 Смысл: один продукт может участвовать во многих арендах (разные периоды/пользователи).
 
----
-
 4. Product ↔ Review
 Sequelize:
 ```
@@ -1493,8 +1489,6 @@ Review.belongsTo(Product, { foreignKey: 'idProduct' });
 Кардинальность: `Product (1) — (N) Review`
 FK: `review.idProduct` → `product.idProduct`
 Смысл: один продукт — много отзывов.
-
----
 
 5. User ↔ Review
 Sequelize:
@@ -1506,8 +1500,6 @@ Review.belongsTo(User, { foreignKey: 'idUser' });
 FK: `review.idUser` → `user.idUser`
 Смысл: пользователь может написать много отзывов.
 
----
-
 6. User ↔ Favourite
 Sequelize:
 ```
@@ -1517,8 +1509,6 @@ Favourite.belongsTo(User, { foreignKey: 'userId' });
 Кардинальность: `User (1) — (N) Favourite`
 FK: `favourite.userId` → `user.idUser`
 Смысл: пользователь может иметь много записей в избранном.
-
----
 
 7. Product ↔ Favourite
 Sequelize:
@@ -1532,7 +1522,7 @@ FK: `favourite.idProduct` → `product.idProduct`
 
 ---
 
-Визуализация
+### Визуализация
 
 Легенда: `1` — одна, `N` — много. Стрелки показывают направление foreign key.
 
