@@ -638,6 +638,7 @@ Content-Type: application/json
 
 ---
 
+<a id="getone-favourite"></a>
 ### `getOne(req, res, next)`
 
 **Что делает:**  
