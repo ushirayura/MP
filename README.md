@@ -14,7 +14,7 @@
 
 ## UserController
 
-**Доступные функции:**
+**Функции:**
 - [`registration(req, res, next)`](#registration-user)
 - [`login(req, res, next)`](#login-user)
 - [`getProfile(req, res, next)`](#getprofile-user)
@@ -328,14 +328,15 @@ Content-Type: application/json
 
 ## ProductController
 
-**Доступные функции:**
-- [`create(req, res, next)`](#createreq-res-next)
-- [`sort(req, res, next)`](#sortreq-res-next)
-- [`getOne(req, res, next)`](#getonereq-res-next)
-- [`remove(req, res, next)`](#removereq-res-next)
+**Функции:**
+- [`create(req, res, next)`](#create-product)
+- [`sort(req, res, next)`](#sort-product)
+- [`getOne(req, res, next)`](#getone-product)
+- [`remove(req, res, next)`](#remove-product)
 
 ---
 
+<a id="create-product"></a>
 ### `create(req, res, next)`
 
 **Что делает:**  
@@ -385,6 +386,7 @@ Content-Type: application/json
 
 ---
 
+<a id="sort-product"></a>
 ### `sort(req, res, next)`
 
 **Что делает:**  
@@ -433,7 +435,7 @@ Content-Type: application/json
 ]
 ```
 
-
+<a id="getone-product"></a>
 ### `getOne(req, res, next)`
 
 **Что делает:**  
@@ -488,6 +490,7 @@ Content-Type: application/json
 
 ---
 
+<a id="remove-product"></a>
 ### `remove(req, res, next)`
 
 **Что делает:**  
@@ -704,15 +707,16 @@ Content-Type: application/json
 
 ## RentController
 
-**Доступные функции:**
-- [`create(req, res, next)`](#create)
-- [`getAll(req, res, next)`](#getall)
-- [`updateStatus(req, res, next)`](#updatestatus)
-- [`getPending(req, res, next)`](#getpending)
+**Функции:**
+- [`create(req, res, next)`](#create-rent)
+- [`getAll(req, res, next)`](#getall-rent)
+- [`updateStatus(req, res, next)`](#updatestatus-rent)
+- [`getPending(req, res, next)`](#getpending-rent)
 
 ---
 
-### `create(req, res, next)` {#create}
+<a id="create-rent"></a>
+### `create(req, res, next)`
 
 **Что делает:**
 1. Извлекает из `req.body` поля `idProduct`, `dataStart`, `dataEnd` и `req.user.idUser` (арендатор).
@@ -759,7 +763,8 @@ Content-Type: application/json
 
 ---
 
-### `getAll(req, res, next)` {#getall}
+<a id="getall-rent"></a>
+### `getAll(req, res, next)`
 
 **Что делает:**  
 1. Извлекает `userId` из `req.user.idUser` или `req.user.id`.  
@@ -829,7 +834,8 @@ Content-Type: application/json
 
 ---
 
-### `updateStatus(req, res, next)` {#updatestatus}
+<a id="updatestatus-rent"></a>
+### `updateStatus(req, res, next)`
 
 **Что делает:**  
 1. Извлекает `id` аренды из `req.params` и новый `status` из `req.body`.  
@@ -876,7 +882,8 @@ Content-Type: application/json
 
 ---
 
-### `getPending(req, res, next)` {#getpending}
+<a id="getpending-rent"></a>
+### `getPending(req, res, next)`
 
 **Что делает:**  
 1. Извлекает `userId` из `req.user.idUser` или `req.user.id`.  
@@ -933,19 +940,20 @@ Content-Type: application/json
 
 ## ReviewController
 
-**Доступные функции:**
-- [`create(req, res, next)`](#create)
-- [`getAllByProduct(req, res, next)`](#getallbyproduct)
-- [`getAllByUser(req, res, next)`](#getallbyuser)
-- [`getStatsByProduct(req, res, next)`](#getstatsbyproduct)
-- [`getStatsByUser(req, res, next)`](#getstatsbyuser)
-- [`getOne(req, res, next)`](#getone)
-- [`update(req, res, next)`](#update)
-- [`delete(req, res, next)`](#delete)
+**Функции:**
+- [`create(req, res, next)`](#create-review)
+- [`getAllByProduct(req, res, next)`](#getallbyproduct-review)
+- [`getAllByUser(req, res, next)`](#getallbyuser-review)
+- [`getStatsByProduct(req, res, next)`](#getstatsbyproduct-review)
+- [`getStatsByUser(req, res, next)`](#getstatsbyuser-review)
+- [`getOne(req, res, next)`](#getone-review)
+- [`update(req, res, next)`](#update-review)
+- [`delete(req, res, next)`](#delete-review)
 
 ---
 
-### `create(req, res, next)` {#create}
+<a id="create-review"></a>
+### `create(req, res, next)`
 
 **Что делает:**  
 1. Извлекает `userId` из `req.user.idUser` или `req.user.id`.  
@@ -1006,7 +1014,8 @@ Content-Type: application/json
 
 ---
 
-### `getAllByProduct(req, res, next)` {#getallbyproduct}
+<a id="getallbyproduct-review"></a>
+### `getAllByProduct(req, res, next)`
 
 **Что делает:**  
 1. Извлекает `idProduct` из `req.body.idProduct` и преобразует его в число.  
@@ -1084,7 +1093,8 @@ Content-Type: application/json
 
 ---
 
-### `getAllByUser(req, res, next)` {#getallbyuser}
+<a id="getallbyuser-review"></a>
+### `getAllByUser(req, res, next)`
 
 **Что делает:**  
 1. Извлекает `idUser` из авторизованного пользователя (`req.user.id`).  
@@ -1138,7 +1148,8 @@ Content-Type: application/json
 
 ---
 
-### `getStatsByProduct(req, res, next)` {#getstatsbyproduct}
+<a id="getstatsbyproduct-review"></a>
+### `getStatsByProduct(req, res, next)`
 
 **Что делает:**  
 1. Проверяет наличие тела запроса и поля `idProduct`.  
@@ -1188,7 +1199,8 @@ Content-Type: application/json
 
 ---
 
-### `getStatsByUser(req, res, next)` {#getstatsbyuser}
+<a id="getstatsbyuser-review"></a>
+### `getStatsByUser(req, res, next)`
 
 **Что делает:**  
 1. Определяет `idUser` из авторизованного пользователя (`req.user.id`).  
@@ -1225,7 +1237,8 @@ Content-Type: application/json
 
 ---
 
-### `getOne(req, res, next)` {#getone}
+<a id="getone-review"></a>
+### `getOne(req, res, next)`
 
 **Что делает:**  
 1. Извлекает `idReview` из параметров запроса (`req.params`).  
@@ -1281,6 +1294,7 @@ Content-Type: application/json
   
 ---
 
+<a id="update-review"></a>
 ### `update(req, res, next)`
 
 **Что делает:**  
@@ -1338,6 +1352,7 @@ Content-Type: application/json
 
 ---
 
+<a id="delete-review"></a>
 ### `delete(req, res, next)`
 
 **Что делает:**  
