@@ -196,22 +196,6 @@ npm run build        # Собрать для продакшена (если на
 - [API Эндпоинты Отзывов](#reviewcontroller)
 - [API Эндпоинты Избранного](#favouritecontroller)
 
----
-
-<div align="center">
-
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/yourusername/rentshare)
-[![Issues](https://img.shields.io/badge/Issues-FF6B6B?style=for-the-badge&logo=github&logoColor=white)](../../issues)
-[![Stars](https://img.shields.io/badge/Stars-FFD93D?style=for-the-badge&logo=github&logoColor=white)](../../stargazers)
-
-</div>
-
----
-
-# Запросы API
-
----
-
 ## UserController
 
 Функция registration принимает HTTP-запрос с полями email, password, name, birthday и phone из объекта req.body. Она проверяет, что обязательные поля phone, password, name и birthday присутствуют, и возвращает ошибку 400 Bad Request, если какое-либо из них отсутствует. Далее функция обращается к базе данных через модель User и проверяет, не существует ли уже пользователь с указанным номером телефона. Если пользователь с таким телефоном найден, возвращается ошибка 400 Bad Request. Если в запросе указан email, выполняется дополнительная проверка на его уникальность аналогичным образом. После успешных проверок пароль хешируется с помощью bcrypt, после чего создается новая запись пользователя в базе данных с сохранением email (или null, если email не передан), захешированного пароля, имени, даты рождения и телефона. Затем генерируется JWT-токен, содержащий id пользователя и номер телефона, с помощью функции generateJwt, в которой секретный ключ берется из переменной окружения SECRET_KEY (или используется значение по умолчанию 'my_secret_key'), а срок действия токена устанавливается в 24 часа. В конце функция возвращает ответ в формате JSON, включающий сгенерированный токен и данные о новом пользователе (id, email, name, birthday, phone). В случае любых ошибок во время выполнения операций функция перехватывает исключение и передает его в следующий middleware в виде ApiError.internal с сообщением ошибки и кодом 500 Internal Server Error.
@@ -1697,3 +1681,12 @@ erDiagram
     PRODUCT ||--o{ FAVOURITE : "fav_by"
 ```
 
+---
+
+<div align="center">
+
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/yourusername/rentshare)
+[![Issues](https://img.shields.io/badge/Issues-FF6B6B?style=for-the-badge&logo=github&logoColor=white)](../../issues)
+[![Stars](https://img.shields.io/badge/Stars-FFD93D?style=for-the-badge&logo=github&logoColor=white)](../../stargazers)
+
+</div>
