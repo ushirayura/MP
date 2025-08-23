@@ -14,61 +14,92 @@
 
 ## UserController
 
-Функция registration принимает HTTP-запрос с полями email, password, name, birthday и phone из объекта req.body. Она проверяет, что обязательные поля phone, password, name и birthday присутствуют, и возвращает ошибку 400 Bad Request, если какое-либо из них отсутствует. Далее функция обращается к базе данных через модель User и проверяет, не существует ли уже пользователь с указанным номером телефона. Если пользователь с таким телефоном найден, возвращается ошибка 400 Bad Request. Если в запросе указан email, выполняется дополнительная проверка на его уникальность аналогичным образом. После успешных проверок пароль хешируется с помощью bcrypt, после чего создается новая запись пользователя в базе данных с сохранением email (или null, если email не передан), захешированного пароля, имени, даты рождения и телефона. Затем генерируется JWT-токен, содержащий id пользователя и номер телефона, с помощью функции generateJwt, в которой секретный ключ берется из переменной окружения SECRET_KEY (или используется значение по умолчанию 'my_secret_key'), а срок действия токена устанавливается в 24 часа. В конце функция возвращает ответ в формате JSON, включающий сгенерированный токен и данные о новом пользователе (id, email, name, birthday, phone). В случае любых ошибок во время выполнения операций функция перехватывает исключение и передает его в следующий middleware в виде ApiError.internal с сообщением ошибки и кодом 500 Internal Server Error.
+**Доступные функции:**
+- [`registration(req, res, next)`](#registrationreq-res-next)
+- [`login(req, res, next)`](#loginreq-res-next)
+- [`getProfile(req, res, next)`](#getprofilereq-res-next)
+- [`updateProfile(req, res, next)`](#updateprofilereq-res-next)
+- [`updatePassword(req, res, next)`](#updatepasswordreq-res-next)
 
-### Пример входных данных
+---
 
-```json
-POST http://localhost:PORT/api/user/registration
+### `registration(req, res, next)`
+
+**Что делает:**  
+1. Извлекает из `req.body` поля `email`, `password`, `name`, `birthday`, `phone`.  
+2. Проверяет наличие обязательных параметров: `phone`, `password`, `name`, `birthday`.  
+   - Если какой-либо из них отсутствует — вызывает `next(ApiError.badRequest('Необходимо указать телефон, пароль, имя и дату рождения'))`.  
+3. Проверяет, существует ли уже пользователь с таким `phone`.  
+   - Если да — возвращает ошибку `ApiError.badRequest('Пользователь с таким номером телефона уже существует')`.  
+4. Если передан `email`, дополнительно проверяет, зарегистрирован ли пользователь с этим `email`.  
+   - Если да — возвращает ошибку `ApiError.badRequest('Пользователь с таким email уже существует')`.  
+5. Хэширует пароль через `bcrypt.hash(password, 5)`.  
+6. Создаёт нового пользователя в базе (`User.create`) с сохранением `email` (если указан), зашифрованного пароля, имени, даты рождения и телефона.  
+7. Генерирует JWT-токен через `generateJwt(user.idUser, user.phone)`.  
+8. Возвращает JSON-ответ с токеном и данными созданного пользователя (`id`, `email`, `name`, `birthday`, `phone`).  
+9. При любой непредвиденной ошибке логгирует её в консоль и вызывает `next(ApiError.internal(e.message))`.  
+
+**Пример запроса (HTTP POST `http://localhost:PORT/api/user/registration`):**  
+```http
+POST /api/user/registration HTTP/1.1
+Host: localhost:PORT
 Content-Type: application/json
 
 {
-  "email": "ivan.ivanov@example.com",
-  "password": "MySecurePassword123",
+  "phone": "+7 (900) 123-45-67",
+  "password": "123456",
   "name": "Иван Иванов",
-  "birthday": "1990-05-15",
-  "phone": "+79161234567"
+  "birthday": "1990-05-20",
+  "email": "ivan@example.com"
 }
 ```
 
-### Возможные ошибки
-
-- **400 Bad Request**: Отсутствует одно из обязательных полей:
-  - `"phone" или "password" или "name" или "birthday"`.
-  - Сообщение: `"Необходимо указать телефон, пароль, имя и дату рождения"`.
-- **400 Bad Request**: Пользователь с указанным номером телефона уже существует.
-  - Сообщение: `"Пользователь с таким номером телефона уже существует"`.
-- **400 Bad Request**: (если передан email) Пользователь с указанным email уже существует.
-  - Сообщение: `"Пользователь с таким email уже существует"`.
-- **500 Internal Server Error**: Любые другие ошибки при работе с базой данных или хешированием.
-  - Сообщение: информация об ошибке из `ApiError.internal`.
-
-### Успешный выход
-
+**Пример успешного ответа:**  
 ```json
-HTTP/1.1 200 OK
-Content-Type: application/json
-
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmUiOiIrNzkxNjEyMzQ1NjciLCJpYXQiOjE2ODA4MzE2MDAsImV4cCI6MTY4MDg2NDAwMH0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+  "token": "<JWT_TOKEN>",
   "user": {
-    "id": 1,
-    "email": "ivan.ivanov@example.com",
+    "id": 42,
+    "email": "ivan@example.com",
     "name": "Иван Иванов",
-    "birthday": "1990-05-15",
-    "phone": "+79161234567"
+    "birthday": "1990-05-20",
+    "phone": "+7 (900) 123-45-67"
   }
 }
 ```
 
+**Возможные ошибки:**  
+- **400 Bad Request** — отсутствуют обязательные поля (`phone`, `password`, `name`, `birthday`).  
+  - Сообщение: `Необходимо указать телефон, пароль, имя и дату рождения`.  
+- **400 Bad Request** — пользователь с таким `phone` уже зарегистрирован.  
+  - Сообщение: `Пользователь с таким номером телефона уже существует`.  
+- **400 Bad Request** — пользователь с таким `email` уже зарегистрирован.  
+  - Сообщение: `Пользователь с таким email уже существует`.  
+- **500 Internal Server Error** — любая внутренняя ошибка (например, сбой при записи в базу).  
+  - Сообщение: `Ошибка при регистрации пользователя` (текст зависит от перехваченного исключения).  
+
 ---
 
-Функция login принимает HTTP-запрос с полями email, phone и password из объекта req.body. Она проверяет, что передан пароль и хотя бы одно из полей phone или email, и возвращает ошибку 400 Bad Request, если это условие не выполнено. Затем функция пытается найти пользователя в базе данных: если указан phone, поиск идет по этому полю, иначе, если пользователя не найден по телефону, проверяется наличие пользователя по переданному email. Если пользователь не найден, возвращается ошибка 500 Internal Server Error с сообщением 'Пользователь не найден'. После успешного поиска пользовательского объекта получается его сохраненный хеш пароля, и выполняется сравнение переданного пароля с хешем через bcrypt.compare. Если пароли не совпадают, возвращается ошибка 500 Internal Server Error с сообщением 'Указан неверный пароль'. В случае успешной верификации генерируется новый JWT-токен через generateJwt с id и телефоном пользователя, срок его действия также составляет 24 часа. Функция формирует и отправляет JSON-ответ, содержащий токен и данные пользователя (id, email, name, birthday, phone). При возникновении ошибок функция перехватывает исключение и возвращает ApiError.internal с соответствующим сообщением и кодом 500 Internal Server Error.
+### `login(req, res, next)`
 
-### Пример входных данных
+**Что делает:**  
+1. Извлекает из `req.body` поля `email`, `phone`, `password`.  
+2. Проверяет, что передан `password` и хотя бы одно из полей `phone` или `email`.  
+   - Если условие не выполнено — вызывает `next(ApiError.badRequest('Необходимо указать пароль и номер телефона или email'))`.  
+3. Пытается найти пользователя в базе данных:  
+   - Если указан `phone` — выполняет поиск по телефону.  
+   - Если пользователь не найден по телефону и указан `email` — выполняет поиск по email.  
+4. Если пользователь не найден — вызывает `next(ApiError.internal('Пользователь не найден'))`.  
+5. Если пользователь найден — получает его хэш пароля и сравнивает его с переданным паролем через `bcrypt.compare`.  
+   - Если пароли не совпадают — возвращает `next(ApiError.internal('Указан неверный пароль'))`.  
+6. В случае успешной верификации генерирует новый JWT-токен через `generateJwt(user.idUser, user.phone)` (срок действия — 24 часа).  
+7. Формирует и отправляет JSON-ответ с токеном и данными пользователя (`id`, `email`, `name`, `birthday`, `phone`).  
+8. При любой непредвиденной ошибке перехватывает исключение и вызывает `next(ApiError.internal(e.message))`.  
 
-```json
-POST http://localhost:PORT/api/user/login
+**Пример запроса (HTTP POST `http://localhost:PORT/api/user/login`):**  
+```http
+POST /api/user/login HTTP/1.1
+Host: localhost:PORT
 Content-Type: application/json
 
 {
@@ -76,9 +107,11 @@ Content-Type: application/json
   "password": "MySecurePassword123"
 }
 ```
-Или (при входе по email):
-```json
-POST /api/user/login
+
+Или (при входе по email):  
+```http
+POST /api/user/login HTTP/1.1
+Host: localhost:PORT
 Content-Type: application/json
 
 {
@@ -87,25 +120,10 @@ Content-Type: application/json
 }
 ```
 
-### Возможные ошибки
-
-- **400 Bad Request**: Не передан пароль или не передан ни `phone`, ни `email`.  
-  - Сообщение: `"Необходимо указать пароль и номер телефона или email"`.  
-- **500 Internal Server Error**: Пользователь не найден ни по телефону, ни по email.  
-  - Сообщение: `"Пользователь не найден"`.  
-- **500 Internal Server Error**: Неверный пароль.  
-  - Сообщение: `"Указан неверный пароль"`.  
-- **500 Internal Server Error**: Любые другие ошибки при работе с базой данных или сравнения паролей.  
-  - Сообщение: информация об ошибке из `ApiError.internal`.
-
-### Успешный выход
-
+**Пример успешного ответа:**  
 ```json
-HTTP/1.1 200 OK
-Content-Type: application/json
-
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmUiOiIrNzkxNjEyMzQ1NjciLCJpYXQiOjE2ODA4MzE2MDAsImV4cCI6MTY4MDg2NDAwMH0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+  "token": "<JWT_TOKEN>",
   "user": {
     "id": 1,
     "email": "ivan.ivanov@example.com",
@@ -115,6 +133,16 @@ Content-Type: application/json
   }
 }
 ```
+
+**Возможные ошибки:**  
+- **400 Bad Request** — не передан пароль или не передан ни `phone`, ни `email`.  
+  - Сообщение: `Необходимо указать пароль и номер телефона или email`.  
+- **500 Internal Server Error** — пользователь не найден.  
+  - Сообщение: `Пользователь не найден`.  
+- **500 Internal Server Error** — указан неверный пароль.  
+  - Сообщение: `Указан неверный пароль`.  
+- **500 Internal Server Error** — любая другая ошибка при работе с базой или сравнения паролей.  
+  - Сообщение: зависит от перехваченного исключения.  
 
 ---
 
@@ -294,6 +322,14 @@ Content-Type: application/json
 ---
 
 ## ProductController
+
+**Доступные функции:**
+- [`create(req, res, next)`](#createreq-res-next)
+- [`sort(req, res, next)`](#sortreq-res-next)
+- [`getOne(req, res, next)`](#getonereq-res-next)
+- [`remove(req, res, next)`](#removereq-res-next)
+
+---
 
 ### `create(req, res, next)`
 
@@ -496,6 +532,14 @@ Content-Type: application/json
 
 ## FavouriteController
 
+**Доступные функции:**
+- [`create(req, res, next)`](#create-favourite)
+- [`remove(req, res, next)`](#remove-favourite)
+- [`getOne(req, res, next)`](#getone-favourite)
+
+---
+
+<a id="create-favourite"></a>
 ### `create(req, res, next)`
 
 **Что делает:**  
@@ -547,6 +591,7 @@ Content-Type: application/json
 
 ---
 
+<a id="remove-favourite"></a>
 ### `remove(req, res, next)`
 
 **Что делает:**  
@@ -654,7 +699,15 @@ Content-Type: application/json
 
 ## RentController
 
-### `create(req, res, next)`
+**Доступные функции:**
+- [`create(req, res, next)`](#create)
+- [`getAll(req, res, next)`](#getall)
+- [`updateStatus(req, res, next)`](#updatestatus)
+- [`getPending(req, res, next)`](#getpending)
+
+---
+
+### `create(req, res, next)` {#create}
 
 **Что делает:**
 1. Извлекает из `req.body` поля `idProduct`, `dataStart`, `dataEnd` и `req.user.idUser` (арендатор).
@@ -701,7 +754,7 @@ Content-Type: application/json
 
 ---
 
-### `getAll(req, res, next)`
+### `getAll(req, res, next)` {#getall}
 
 **Что делает:**  
 1. Извлекает `userId` из `req.user.idUser` или `req.user.id`.  
@@ -771,7 +824,7 @@ Content-Type: application/json
 
 ---
 
-### `updateStatus(req, res, next)`
+### `updateStatus(req, res, next)` {#updatestatus}
 
 **Что делает:**  
 1. Извлекает `id` аренды из `req.params` и новый `status` из `req.body`.  
@@ -818,7 +871,7 @@ Content-Type: application/json
 
 ---
 
-### `getPending(req, res, next)`
+### `getPending(req, res, next)` {#getpending}
 
 **Что делает:**  
 1. Извлекает `userId` из `req.user.idUser` или `req.user.id`.  
@@ -875,7 +928,19 @@ Content-Type: application/json
 
 ## ReviewController
 
-### `create(req, res, next)`
+**Доступные функции:**
+- [`create(req, res, next)`](#create)
+- [`getAllByProduct(req, res, next)`](#getallbyproduct)
+- [`getAllByUser(req, res, next)`](#getallbyuser)
+- [`getStatsByProduct(req, res, next)`](#getstatsbyproduct)
+- [`getStatsByUser(req, res, next)`](#getstatsbyuser)
+- [`getOne(req, res, next)`](#getone)
+- [`update(req, res, next)`](#update)
+- [`delete(req, res, next)`](#delete)
+
+---
+
+### `create(req, res, next)` {#create}
 
 **Что делает:**  
 1. Извлекает `userId` из `req.user.idUser` или `req.user.id`.  
@@ -936,7 +1001,7 @@ Content-Type: application/json
 
 ---
 
-### `getAllByProduct(req, res, next)`
+### `getAllByProduct(req, res, next)` {#getallbyproduct}
 
 **Что делает:**  
 1. Извлекает `idProduct` из `req.body.idProduct` и преобразует его в число.  
@@ -1014,7 +1079,7 @@ Content-Type: application/json
 
 ---
 
-### `getAllByUser(req, res, next)`
+### `getAllByUser(req, res, next)` {#getallbyuser}
 
 **Что делает:**  
 1. Извлекает `idUser` из авторизованного пользователя (`req.user.id`).  
@@ -1068,7 +1133,7 @@ Content-Type: application/json
 
 ---
 
-### `getStatsByProduct(req, res, next)`
+### `getStatsByProduct(req, res, next)` {#getstatsbyproduct}
 
 **Что делает:**  
 1. Проверяет наличие тела запроса и поля `idProduct`.  
@@ -1118,7 +1183,7 @@ Content-Type: application/json
 
 ---
 
-### `getStatsByUser(req, res, next)`
+### `getStatsByUser(req, res, next)` {#getstatsbyuser}
 
 **Что делает:**  
 1. Определяет `idUser` из авторизованного пользователя (`req.user.id`).  
@@ -1155,7 +1220,7 @@ Content-Type: application/json
 
 ---
 
-### `getOne(req, res, next)`
+### `getOne(req, res, next)` {#getone}
 
 **Что делает:**  
 1. Извлекает `idReview` из параметров запроса (`req.params`).  
