@@ -1448,8 +1448,6 @@ Content-Type: application/json
 
 Основные сущности: `User`, `Product`, `Rent`, `Review`, `Favourite`. Все связи — стандартные «один-ко-многим» (1 → N) в различных комбинациях.
 
----
-
 1. User ↔ Product
 Sequelize:
 ```
