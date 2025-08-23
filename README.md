@@ -8,9 +8,9 @@
 
 - [API Эндпоинты Пользователей](#usercontroller)
 - [API Эндпоинты Продуктов](#productcontroller)
+- [API Эндпоинты Избранного](#favouritecontroller)
 - [API Эндпоинты Аренды](#rentcontroller)
 - [API Эндпоинты Отзывов](#reviewcontroller)
-- [API Эндпоинты Избранного](#favouritecontroller)
 
 ## UserController
 
