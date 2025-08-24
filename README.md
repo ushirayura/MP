@@ -333,6 +333,8 @@ Content-Type: application/json
 - [`sort(req, res, next)`](#sort-product)
 - [`getOne(req, res, next)`](#getone-product)
 - [`remove(req, res, next)`](#remove-product)
+- [`toggleStatus(req, res, next)`](#toggleStatus-product)
+- [`getActiveProducts(req, res, next)`](#getActive-product)
 
 ---
 
@@ -340,11 +342,14 @@ Content-Type: application/json
 ### `create(req, res, next)`
 
 **Что делает:**  
-1. Извлекает из `req.body` поля `name`, `description`, `userId`, `category`, `photo`, `price` и опционально `rating`.  
+1. Извлекает из `req.body` поля `name`, `description`, `userId`, `category`, `status`, `photo`, `price` и опционально `rating`.  
 2. Проверяет наличие обязательных полей `name`, `description`, `userId`, `category`, `photo`, `price`; при их отсутствии возвращает `ApiError.badRequest`.  
-3. Создаёт новую запись продукта в базе данных через модель `Product.create` с указанными полями.  
-4. Возвращает в ответе статус `201 Created` и JSON-объект, содержащий данные созданного продукта.  
-5. В случае ошибки (например, ошибка валидации Sequelize) вызывает `next(ApiError.badRequest(e.message))`, возвращая ошибку `400 Bad Request` с сообщением ошибки.
+3. Преобразует `userId` в число и проверяет, что пользователь с таким `userId` существует в базе (`User.findByPk`). Если пользователь не найден — возвращает ошибку `400`.  
+4. Нормализует название товара (`trim`) и проверяет, существует ли уже у пользователя товар с таким именем и категорией (регистронезависимо, через `Op.iLike`).  
+   - Если товар найден — возвращает ошибку `400` с сообщением: `У пользователя уже есть товар с таким названием в этой категории`.  
+5. Создаёт новую запись продукта в базе данных через модель `Product.create` с указанными полями.  
+6. Возвращает в ответе статус `201 Created` и JSON-объект с данными созданного продукта.  
+7. В случае ошибки (например, ошибка валидации Sequelize) вызывает `next(ApiError.badRequest(e.message))`, возвращая `400 Bad Request` с сообщением ошибки.  
 
 **Пример входных данных (HTTP POST `http://localhost:PORT/api/product/create`):**  
 ```json
@@ -353,6 +358,7 @@ Content-Type: application/json
   "description": "Смартфон Apple последнего поколения",
   "userId": 1,
   "category": "Electronics",
+  "status": "active",
   "photo": "https://example.com/photos/iphone14pro.png",
   "price": 999.99,
   "rating": 4.8
@@ -362,8 +368,12 @@ Content-Type: application/json
 **Возможные ошибки:**  
 - **400 Bad Request** — отсутствуют обязательные поля `name`, `description`, `userId`, `category`, `photo` или `price`.  
   - Сообщение: `Поля name, description, userId, category, photo и price обязательны`.  
+- **400 Bad Request** — пользователь с указанным `userId` не найден.  
+  - Сообщение: `Пользователь с таким userId не найден`.  
+- **400 Bad Request** — у пользователя уже есть товар с таким названием в этой категории.  
+  - Сообщение: `У пользователя уже есть товар с таким названием в этой категории`.  
 - **400 Bad Request** — ошибка валидации или другая ошибка при создании записи (например, сообщение из `Sequelize`).  
-  - Сообщение: текст ошибки из `e.message`.
+  - Сообщение: текст ошибки из `e.message`.  
 
 **Успешный выход:**  
 ```json
@@ -371,11 +381,12 @@ HTTP/1.1 201 Created
 Content-Type: application/json
 
 {
-  "id": 10,
+  "idProduct": 10,
   "name": "iPhone 14 Pro",
   "description": "Смартфон Apple последнего поколения",
   "userId": 1,
   "category": "Electronics",
+  "status": "active",
   "photo": "https://example.com/photos/iphone14pro.png",
   "price": 999.99,
   "rating": 4.8,
@@ -537,6 +548,125 @@ Content-Type: application/json
 ```
 
 ---
+
+<a id="toggleStatus-product"></a>
+### `toggleStatus(req, res, next)`
+
+**Что делает:**  
+1. Извлекает из `req.body` поля `userId` и `productId`.  
+2. Проверяет наличие обоих полей. Если какое-либо отсутствует — возвращает `ApiError.badRequest`.  
+3. Приводит `userId` и `productId` к числам. Если они невалидны — возвращает `ApiError.badRequest`.  
+4. Проверяет существование пользователя по `userId`. Если пользователь не найден — возвращает `ApiError.badRequest`.  
+5. Проверяет существование товара по `productId`. Если товар не найден — возвращает `ApiError.badRequest`.  
+6. Проверяет, принадлежит ли товар пользователю (`product.userId === userId`) или у пользователя есть права администратора (`user.admin`). Если нет — возвращает `ApiError.forbidden`.  
+7. Определяет текущий статус товара (`active` или `waiting`).  
+   - Если статус `active`, переключает на `waiting`.  
+   - Если статус `waiting`, переключает на `active`.  
+   - Если статус другой — возвращает `ApiError.badRequest`.  
+8. Обновляет статус товара в БД.  
+9. Возвращает JSON-ответ с сообщением об изменении и обновлённым объектом товара.  
+
+**Пример входных данных (HTTP PATCH `http://localhost:PORT/api/product/toggleStatus`):**  
+```json
+{
+  "userId": 1,
+  "productId": 42
+}
+```
+
+**Возможные ошибки:**  
+- **400 Bad Request** — не указан `userId` или `productId`.  
+  - Сообщение: `Не указан userId или productId`.  
+- **400 Bad Request** — неверный формат `userId` или `productId`.  
+  - Сообщение: `userId и productId должны быть числами`.  
+- **400 Bad Request** — пользователь не найден.  
+  - Сообщение: `Пользователь с таким userId не найден`.  
+- **400 Bad Request** — товар не найден.  
+  - Сообщение: `Товар не найден`.  
+- **403 Forbidden** — нет прав на изменение товара.  
+  - Сообщение: `Нет прав изменять этот товар`.  
+- **400 Bad Request** — статус товара не `active` и не `waiting`.  
+  - Сообщение: `Нельзя переключить статус "<status>". Только "active" <-> "waiting".`.  
+- **500 Internal Server Error** — внутренняя ошибка сервера.  
+
+**Успешный выход:**  
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "message": "Статус изменён на \"waiting\"",
+  "product": {
+    "id": 42,
+    "name": "Шуруповёрт Bosch",
+    "description": "Профессиональный инструмент",
+    "userId": 1,
+    "category": "Tools",
+    "status": "waiting",
+    "photo": "https://example.com/photos/bosch.png",
+    "price": 199.99,
+    "rating": 4.7,
+    "createdAt": "2025-06-03T10:15:30.000Z",
+    "updatedAt": "2025-06-03T11:20:00.000Z"
+  }
+}
+```  
+
+---
+
+<a id="getActive-product"></a>
+### `getActiveProducts(req, res, next)`
+
+**Что делает:**  
+1. Выполняет поиск всех товаров в базе данных через модель `Product.findAll`, фильтруя только записи со статусом `active`.  
+2. Возвращает список всех активных товаров в формате JSON.  
+3. В случае ошибки вызывает `next(ApiError.badRequest(e.message))`, возвращая ошибку `400 Bad Request` с сообщением ошибки.
+
+**Пример запроса (HTTP GET `http://localhost:PORT/api/product/getActive`):**  
+```http
+GET /api/product/active HTTP/1.1
+Host: localhost:PORT
+```
+
+**Успешный выход:**  
+```json
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+[
+  {
+    "id": 1,
+    "name": "iPhone 14 Pro",
+    "description": "Смартфон Apple последнего поколения",
+    "userId": 1,
+    "category": "Electronics",
+    "photo": "https://example.com/photos/iphone14pro.png",
+    "price": 999.99,
+    "rating": 4.8,
+    "status": "active",
+    "createdAt": "2025-06-03T10:15:30.000Z",
+    "updatedAt": "2025-06-03T10:15:30.000Z"
+  },
+  {
+    "id": 2,
+    "name": "Ноутбук Dell XPS 13",
+    "description": "Компактный и мощный ультрабук",
+    "userId": 2,
+    "category": "Electronics",
+    "photo": "https://example.com/photos/dellxps13.png",
+    "price": 1299.99,
+    "rating": 4.6,
+    "status": "active",
+    "createdAt": "2025-06-03T12:20:45.000Z",
+    "updatedAt": "2025-06-03T12:20:45.000Z"
+  }
+]
+```
+
+**Возможные ошибки:**  
+- **400 Bad Request** — ошибка выполнения запроса к базе данных.  
+  - Сообщение: текст ошибки из `e.message`.
+
 
 ## FavouriteController
 
